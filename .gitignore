@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+
+# Herramientas
+.playwright-cli/
+*.png
+
+# Binarios pesados y datos de cliente.
+# El .xls de la herramienta de referencia pesa 7.8 MB y su codigo ya esta
+# extraido en reference/sead_vba/. Los .xlsx de assets/estudios/ son corridas
+# reales con nombres de vialidades de cliente; lo que el repo necesita de ellos
+# son los numeros, ya congelados en reference/casos_sead.json.
+assets/*.xls
+assets/estudios/
+
+# Salidas regenerables de cada estudio
+estudios/**/reporte.html
+estudios/**/malla.csv
+estudios/**/resultados.json

@@ -1,0 +1,503 @@
+{
+  "descripcion": "Casos de regresion extraidos de los estudios reales de assets/estudios/*.xlsx (SEAD Street Lighting Tool). Cada caso trae la geometria de entrada y los resultados esperados de iluminancia para un luminario cuyo .ies existe en assets/.",
+  "num_estudios": 7,
+  "estudios": [
+    {
+      "archivo": null,
+      "estudio": "estudio-01",
+      "casos": [
+        {
+          "id_simulacion": "RESULTADOS - 1",
+          "luminario": {
+            "archivo_ies": "V1070UN2M50.ies",
+            "tipo": "LED",
+            "vatios": 71.9
+          },
+          "geometria": {
+            "luminarias_km": 25.12562814070352,
+            "num_carriles": 2,
+            "ancho_carril": 2.5,
+            "camellon": 0,
+            "posicion_poste": "De un solo lado",
+            "altura_montaje": 7.5,
+            "interpostal": 39.8,
+            "retranqueo": 0.2,
+            "largo_brazo": 1.8,
+            "llf": 0.765
+          },
+          "esperado": {
+            "promedio": 15.506429325620354,
+            "minimo": 6.928722649627498,
+            "maximo": 39.41362672946969,
+            "uniformidad": 2.237992500169423,
+            "objetivo_promedio": 7,
+            "objetivo_uniformidad": 6,
+            "cumple": 1
+          }
+        },
+        {
+          "id_simulacion": "RESULTADOS - 2",
+          "luminario": {
+            "archivo_ies": "V2100UN2M50.ies",
+            "tipo": "LED",
+            "vatios": 95.986
+          },
+          "geometria": {
+            "luminarias_km": 25.12562814070352,
+            "num_carriles": 2,
+            "ancho_carril": 2.5,
+            "camellon": 0,
+            "posicion_poste": "De un solo lado",
+            "altura_montaje": 7.5,
+            "interpostal": 39.8,
+            "retranqueo": 0.2,
+            "largo_brazo": 1.8,
+            "llf": 0.765
+          },
+          "esperado": {
+            "promedio": 17.668894764669524,
+            "minimo": 5.293373020172041,
+            "maximo": 38.33900343352766,
+            "uniformidad": 3.3379273853054974,
+            "objetivo_promedio": 7,
+            "objetivo_uniformidad": 6,
+            "cumple": 1
+          }
+        }
+      ],
+      "omitidos": [
+        {
+          "id_simulacion": "Línea base (referencia)",
+          "nombre_luminaria": "AH - LED 73W Type III",
+          "motivo": "fila de linea base (luminario generico sin .ies disponible)"
+        }
+      ]
+    },
+    {
+      "archivo": null,
+      "estudio": "estudio-02",
+      "casos": [
+        {
+          "id_simulacion": "RESULTADOS - 1",
+          "luminario": {
+            "archivo_ies": "V1070UN2M50.ies",
+            "tipo": "LED",
+            "vatios": 71.9
+          },
+          "geometria": {
+            "luminarias_km": 30.1659125188537,
+            "num_carriles": 2,
+            "ancho_carril": 4.09,
+            "camellon": 0,
+            "posicion_poste": "De un solo lado",
+            "altura_montaje": 7,
+            "interpostal": 33.15,
+            "retranqueo": 0.2,
+            "largo_brazo": 1.8,
+            "llf": 0.765
+          },
+          "esperado": {
+            "promedio": 18.239220226514355,
+            "minimo": 10.434318792533393,
+            "maximo": 44.75342247128989,
+            "uniformidad": 1.7480029687770329,
+            "objetivo_promedio": 7,
+            "objetivo_uniformidad": 6,
+            "cumple": 1
+          }
+        },
+        {
+          "id_simulacion": "RESULTADOS - 2",
+          "luminario": {
+            "archivo_ies": "V2100UN2M50.ies",
+            "tipo": "LED",
+            "vatios": 95.986
+          },
+          "geometria": {
+            "luminarias_km": 30.1659125188537,
+            "num_carriles": 2,
+            "ancho_carril": 4.09,
+            "camellon": 0,
+            "posicion_poste": "De un solo lado",
+            "altura_montaje": 7,
+            "interpostal": 33.15,
+            "retranqueo": 0.2,
+            "largo_brazo": 1.8,
+            "llf": 0.765
+          },
+          "esperado": {
+            "promedio": 22.878443226887125,
+            "minimo": 8.558571589850747,
+            "maximo": 39.79033140978795,
+            "uniformidad": 2.6731614016079175,
+            "objetivo_promedio": 7,
+            "objetivo_uniformidad": 6,
+            "cumple": 1
+          }
+        }
+      ],
+      "omitidos": [
+        {
+          "id_simulacion": "Línea base (referencia)",
+          "nombre_luminaria": "AH - LED 73W Type III",
+          "motivo": "fila de linea base (luminario generico sin .ies disponible)"
+        }
+      ]
+    },
+    {
+      "archivo": null,
+      "estudio": "estudio-03",
+      "casos": [
+        {
+          "id_simulacion": "RESULTADOS - 1",
+          "luminario": {
+            "archivo_ies": "V2100UN2M50.ies",
+            "tipo": "LED",
+            "vatios": 95.986
+          },
+          "geometria": {
+            "luminarias_km": 37.03703703703704,
+            "num_carriles": 4,
+            "ancho_carril": 2.68,
+            "camellon": 4,
+            "posicion_poste": "Montado en el camellón",
+            "altura_montaje": 9,
+            "interpostal": 27,
+            "retranqueo": 0.2,
+            "largo_brazo": 1.8,
+            "llf": 0.765
+          },
+          "esperado": {
+            "promedio": 31.814469505469276,
+            "minimo": 20.68544935882178,
+            "maximo": 39.20954811044816,
+            "uniformidad": 1.5380120080350719,
+            "objetivo_promedio": 4,
+            "objetivo_uniformidad": 6,
+            "cumple": 1
+          }
+        },
+        {
+          "id_simulacion": "RESULTADOS - 2",
+          "luminario": {
+            "archivo_ies": "V2130UN2M50.ies",
+            "tipo": "LED",
+            "vatios": 124.484
+          },
+          "geometria": {
+            "luminarias_km": 37.03703703703704,
+            "num_carriles": 4,
+            "ancho_carril": 2.68,
+            "camellon": 4,
+            "posicion_poste": "Montado en el camellón",
+            "altura_montaje": 9,
+            "interpostal": 27,
+            "retranqueo": 0.2,
+            "largo_brazo": 1.8,
+            "llf": 0.765
+          },
+          "esperado": {
+            "promedio": 35.70193828382453,
+            "minimo": 22.121533822652797,
+            "maximo": 66.65327129674327,
+            "uniformidad": 1.6138997670796764,
+            "objetivo_promedio": 4,
+            "objetivo_uniformidad": 6,
+            "cumple": 1
+          }
+        }
+      ],
+      "omitidos": [
+        {
+          "id_simulacion": "Línea base (referencia)",
+          "nombre_luminaria": "AK - LED 77W Type III",
+          "motivo": "fila de linea base (luminario generico sin .ies disponible)"
+        }
+      ]
+    },
+    {
+      "archivo": null,
+      "estudio": "estudio-04",
+      "casos": [
+        {
+          "id_simulacion": "RESULTADOS - 1",
+          "luminario": {
+            "archivo_ies": "V1070UN2M50.ies",
+            "tipo": "LED",
+            "vatios": 71.9
+          },
+          "geometria": {
+            "luminarias_km": 27.909572983533355,
+            "num_carriles": 2,
+            "ancho_carril": 4.71,
+            "camellon": 0,
+            "posicion_poste": "De un solo lado",
+            "altura_montaje": 7.5,
+            "interpostal": 35.83,
+            "retranqueo": 0.2,
+            "largo_brazo": 1.8,
+            "llf": 0.765
+          },
+          "esperado": {
+            "promedio": 15.306770472116241,
+            "minimo": 8.937097249506554,
+            "maximo": 39.91556255965526,
+            "uniformidad": 1.7127228276453383,
+            "objetivo_promedio": 7,
+            "objetivo_uniformidad": 6,
+            "cumple": 1
+          }
+        },
+        {
+          "id_simulacion": "RESULTADOS - 2",
+          "luminario": {
+            "archivo_ies": "V2100UN2M50.ies",
+            "tipo": "LED",
+            "vatios": 95.986
+          },
+          "geometria": {
+            "luminarias_km": 27.909572983533355,
+            "num_carriles": 2,
+            "ancho_carril": 4.71,
+            "camellon": 0,
+            "posicion_poste": "De un solo lado",
+            "altura_montaje": 7.5,
+            "interpostal": 35.83,
+            "retranqueo": 0.2,
+            "largo_brazo": 1.8,
+            "llf": 0.765
+          },
+          "esperado": {
+            "promedio": 18.91718797105191,
+            "minimo": 7.776278494778069,
+            "maximo": 35.230926702184,
+            "uniformidad": 2.432678817220241,
+            "objetivo_promedio": 7,
+            "objetivo_uniformidad": 6,
+            "cumple": 1
+          }
+        }
+      ],
+      "omitidos": [
+        {
+          "id_simulacion": "Línea base (referencia)",
+          "nombre_luminaria": "AH - LED 73W Type III",
+          "motivo": "fila de linea base (luminario generico sin .ies disponible)"
+        }
+      ]
+    },
+    {
+      "archivo": null,
+      "estudio": "estudio-05",
+      "casos": [
+        {
+          "id_simulacion": "RESULTADOS - 1",
+          "luminario": {
+            "archivo_ies": "V1070UN2M50.ies",
+            "tipo": "LED",
+            "vatios": 71.9
+          },
+          "geometria": {
+            "luminarias_km": 33.101621979476995,
+            "num_carriles": 4,
+            "ancho_carril": 3.36,
+            "camellon": 0,
+            "posicion_poste": "De un solo lado",
+            "altura_montaje": 6,
+            "interpostal": 30.21,
+            "retranqueo": 0.2,
+            "largo_brazo": 1.8,
+            "llf": 0.765
+          },
+          "esperado": {
+            "promedio": 15.297371348005441,
+            "minimo": 1.2219300335470547,
+            "maximo": 54.71539278382929,
+            "uniformidad": 12.519023944112233,
+            "objetivo_promedio": 4,
+            "objetivo_uniformidad": 6,
+            "cumple": 0
+          }
+        },
+        {
+          "id_simulacion": "RESULTADOS - 2",
+          "luminario": {
+            "archivo_ies": "V2100UN2M50.ies",
+            "tipo": "LED",
+            "vatios": 95.986
+          },
+          "geometria": {
+            "luminarias_km": 33.101621979476995,
+            "num_carriles": 4,
+            "ancho_carril": 3.36,
+            "camellon": 0,
+            "posicion_poste": "De un solo lado",
+            "altura_montaje": 6,
+            "interpostal": 30.21,
+            "retranqueo": 0.2,
+            "largo_brazo": 1.8,
+            "llf": 0.765
+          },
+          "esperado": {
+            "promedio": 17.513771008395782,
+            "minimo": 0.8926982831602401,
+            "maximo": 59.296894767201124,
+            "uniformidad": 19.618914182735182,
+            "objetivo_promedio": 4,
+            "objetivo_uniformidad": 6,
+            "cumple": 0
+          }
+        }
+      ],
+      "omitidos": [
+        {
+          "id_simulacion": "Línea base (referencia)",
+          "nombre_luminaria": "AH - LED 73W Type III",
+          "motivo": "fila de linea base (luminario generico sin .ies disponible)"
+        }
+      ]
+    },
+    {
+      "archivo": null,
+      "estudio": "estudio-06",
+      "casos": [
+        {
+          "id_simulacion": "RESULTADOS - 1",
+          "luminario": {
+            "archivo_ies": "V2130UN2M50.ies",
+            "tipo": "LED",
+            "vatios": 124.484
+          },
+          "geometria": {
+            "luminarias_km": 27.427317608337905,
+            "num_carriles": 2,
+            "ancho_carril": 4.35,
+            "camellon": 0,
+            "posicion_poste": "De un solo lado",
+            "altura_montaje": 7.5,
+            "interpostal": 36.46,
+            "retranqueo": 0.2,
+            "largo_brazo": 1.8,
+            "llf": 0.765
+          },
+          "esperado": {
+            "promedio": 24.970459357001488,
+            "minimo": 12.694075695153677,
+            "maximo": 64.52314989302455,
+            "uniformidad": 1.9670955142117728,
+            "objetivo_promedio": 12,
+            "objetivo_uniformidad": 4,
+            "cumple": 1
+          }
+        },
+        {
+          "id_simulacion": "RESULTADOS - 2",
+          "luminario": {
+            "archivo_ies": "V3160UN2M50.ies",
+            "tipo": "LED",
+            "vatios": 164.6
+          },
+          "geometria": {
+            "luminarias_km": 27.427317608337905,
+            "num_carriles": 2,
+            "ancho_carril": 4.35,
+            "camellon": 0,
+            "posicion_poste": "De un solo lado",
+            "altura_montaje": 7.5,
+            "interpostal": 36.46,
+            "retranqueo": 0.2,
+            "largo_brazo": 1.8,
+            "llf": 0.765
+          },
+          "esperado": {
+            "promedio": 35.00123755310433,
+            "minimo": 17.04723302535688,
+            "maximo": 90.93607422024897,
+            "uniformidad": 2.053191711584032,
+            "objetivo_promedio": 12,
+            "objetivo_uniformidad": 4,
+            "cumple": 1
+          }
+        }
+      ],
+      "omitidos": [
+        {
+          "id_simulacion": "Línea base (referencia)",
+          "nombre_luminaria": "AL - LED 124W Type III",
+          "motivo": "fila de linea base (luminario generico sin .ies disponible)"
+        }
+      ]
+    },
+    {
+      "archivo": null,
+      "estudio": "estudio-07",
+      "casos": [
+        {
+          "id_simulacion": "RESULTADOS - 1",
+          "luminario": {
+            "archivo_ies": "V2130UN2M50.ies",
+            "tipo": "LED",
+            "vatios": 124.484
+          },
+          "geometria": {
+            "luminarias_km": 33.333333333333336,
+            "num_carriles": 6,
+            "ancho_carril": 3.33,
+            "camellon": 0,
+            "posicion_poste": "De un solo lado",
+            "altura_montaje": 7.5,
+            "interpostal": 30,
+            "retranqueo": 0.2,
+            "largo_brazo": 1.8,
+            "llf": 0.765
+          },
+          "esperado": {
+            "promedio": 16.450226306849107,
+            "minimo": 0.5777391169696043,
+            "maximo": 71.52674489742344,
+            "uniformidad": 28.473450773309118,
+            "objetivo_promedio": 12,
+            "objetivo_uniformidad": 4,
+            "cumple": 0
+          }
+        },
+        {
+          "id_simulacion": "RESULTADOS - 2",
+          "luminario": {
+            "archivo_ies": "V3160UN2M50.ies",
+            "tipo": "LED",
+            "vatios": 164.6
+          },
+          "geometria": {
+            "luminarias_km": 33.333333333333336,
+            "num_carriles": 6,
+            "ancho_carril": 3.33,
+            "camellon": 0,
+            "posicion_poste": "De un solo lado",
+            "altura_montaje": 7.5,
+            "interpostal": 30,
+            "retranqueo": 0.2,
+            "largo_brazo": 1.8,
+            "llf": 0.765
+          },
+          "esperado": {
+            "promedio": 22.746195532707823,
+            "minimo": 0.7237058425052665,
+            "maximo": 96.25153046906009,
+            "uniformidad": 31.430167060648397,
+            "objetivo_promedio": 12,
+            "objetivo_uniformidad": 4,
+            "cumple": 0
+          }
+        }
+      ],
+      "omitidos": [
+        {
+          "id_simulacion": "Línea base (referencia)",
+          "nombre_luminaria": "AL - LED 124W Type III",
+          "motivo": "fila de linea base (luminario generico sin .ies disponible)"
+        }
+      ]
+    }
+  ]
+}

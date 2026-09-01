@@ -1,0 +1,77 @@
+{
+  "luminarios": [
+    {
+      "archivo": "V1050UN2M50.ies",
+      "catalogo": "V1050UN2M50",
+      "fabricante": "CONSTRULITA LIGHTING INTERNATIONAL, S.A. DE C.V.",
+      "watts_declarados": 49.94,
+      "watts_texto": 50.0,
+      "lumenes": 6597.61,
+      "simetria": "ninguna",
+      "n_angulos_v": 361,
+      "n_angulos_h": 73,
+      "eficacia_lm_w": 132.1
+    },
+    {
+      "archivo": "V1070UN2M50.ies",
+      "catalogo": "V1070UN2M50",
+      "fabricante": "CONSTRULITA LIGHTING INTERNATIONAL, S.A. DE C.V.",
+      "watts_declarados": 71.9,
+      "watts_texto": 70.0,
+      "lumenes": 9456.8,
+      "simetria": "ninguna",
+      "n_angulos_v": 361,
+      "n_angulos_h": 73,
+      "eficacia_lm_w": 131.5
+    },
+    {
+      "archivo": "V2100UN2M50.ies",
+      "catalogo": "V2100UN2M50",
+      "fabricante": "CONSTRULITA LIGHTING INTERNATIONAL, S.A. DE C.V.",
+      "watts_declarados": 95.986,
+      "watts_texto": 100.0,
+      "lumenes": "absoluta",
+      "simetria": "bilateral",
+      "n_angulos_v": 73,
+      "n_angulos_h": 19,
+      "eficacia_lm_w": null
+    },
+    {
+      "archivo": "V2130UN2M50.ies",
+      "catalogo": "V2130UN2M50",
+      "fabricante": "CONSTRULITA LIGHTING INTERNATIONAL, S.A. DE C.V.",
+      "watts_declarados": 124.484,
+      "watts_texto": 130.0,
+      "lumenes": "absoluta",
+      "simetria": "bilateral",
+      "n_angulos_v": 73,
+      "n_angulos_h": 19,
+      "eficacia_lm_w": null
+    },
+    {
+      "archivo": "V3160UN2M50.ies",
+      "catalogo": "V3160UN2M50",
+      "fabricante": "CONSTRULITA LIGHTING INTERNATIONAL S.A. DE C.V.",
+      "watts_declarados": 164.6,
+      "watts_texto": 160.0,
+      "lumenes": 22404.0,
+      "simetria": "ninguna",
+      "n_angulos_v": 361,
+      "n_angulos_h": 73,
+      "eficacia_lm_w": 136.1
+    },
+    {
+      "archivo": "V3200UN3M50.ies",
+      "catalogo": "V3200UN3M50",
+      "fabricante": "CONSTRULITA LIGHTING INTERNATIONAL S.A. DE C.V.",
+      "watts_declarados": 199.3,
+      "watts_texto": 200.0,
+      "lumenes": 26115.0,
+      "simetria": "ninguna",
+      "n_angulos_v": 361,
+      "n_angulos_h": 73,
+      "eficacia_lm_w": 131.0
+    }
+  ],
+  "errores": []
+}

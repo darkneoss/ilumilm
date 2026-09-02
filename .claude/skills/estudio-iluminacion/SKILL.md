@@ -39,6 +39,9 @@ siempre los valores por omisión, que cubren el caso típico.
   menciona, avísale que ese camino no tiene corrida de referencia (`README.md`),
   y que duplicar los luminarios por poste duplica la carga del tramo y por tanto
   el DPEA — que es criterio de cumplimiento, no un dato informativo.
+  **En `central doble` NO lo pongas en 2**: esa disposición ya cuelga dos
+  luminarios de cada poste, uno por sentido. Si el usuario pide «dos luminarios
+  por poste en el camellón», lo que quiere es `central doble` a secas.
 
 ## Cómo correrlo
 

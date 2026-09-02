@@ -37,6 +37,16 @@ que lo respalde. Con el valor por omisión de un luminario por poste el camino
 es demostrablemente neutro: las 24 corridas siguen cuadrando. Si vas a entregar
 un estudio con dos luminarios por poste, conviene contrastar una corrida antes.
 
+No es casualidad que falte: en la herramienta original la opción está a medio
+terminar y no se anuncia en la interfaz en español (el detalle está en
+[`reference/sead_vba_1.8.1/README.md`](reference/sead_vba_1.8.1/README.md)).
+
+**Ojo: el doble brazo del camellón no es esto.** En `central doble` ya hay dos
+luminarios por poste, uno por sentido, y lo pone la disposición: el DPEA cuenta
+dos por tramo sin que haya que declarar nada. `luminarios_por_poste` es un
+multiplicador aparte, así que ponerlo en 2 sobre `central doble` da cuatro
+brazos por poste y cuadruplica la carga del tramo.
+
 ---
 
 ## Uso con la skill (recomendado)

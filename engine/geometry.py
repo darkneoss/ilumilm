@@ -117,6 +117,13 @@ class Montaje:
     luminarios_por_poste: int = 1       # `selectedFixturesPerPole`
     angulo_separacion: float = 0.0      # entre los brazos de un mismo poste, grados
 
+    # OJO: esto no es el doble brazo del camellon. En "central doble" la
+    # disposicion YA cuelga dos luminarios de cada poste, uno por sentido, y el
+    # DPEA cuenta dos por tramo sin declarar nada. `luminarios_por_poste` es un
+    # multiplicador aparte que aplica a cualquier disposicion, asi que en
+    # central doble daria cuatro brazos por poste. El original lo permite igual;
+    # ver reference/sead_vba_1.8.1/README.md.
+
     def __post_init__(self) -> None:
         if not -90.0 < self.inclinacion < 90.0:
             raise ValueError("inclinacion debe estar entre -90 y 90 grados")

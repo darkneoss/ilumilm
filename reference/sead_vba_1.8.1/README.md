@@ -65,14 +65,44 @@ La 1.7.6 generaba un luminario extra por lado (hasta `x = 5S`) por un
 `CInt(gridlength / polespacing) + 1` y `FixturePositions.bas` reescrito con
 `polePhase`. Ver la nota de `posiciones_luminarios` en `engine/geometry.py`.
 
-### Entradas que el port todavía no mapea
+### Dos luminarios por poste: una función a medio terminar
 
-Ambas nuevas de la 1.8.1, ambas en `FixtureData`:
+Las otras dos entradas nuevas de la 1.8.1, ambas en `FixtureData`:
 
 * `selectedFixturesPerPole` — multiplica los luminarios por poste
   (`FixturePositions.bas:31`).
-* `selectedSeparationAngleRadians` — separa en X los brazos de un mismo poste
-  y les da giros opuestos sobre Z (`FixturePositions.bas:45,88-90`).
+* `selectedSeparationAngle` — separa en X los brazos de un mismo poste y les da
+  giros opuestos sobre Z (`FixturePositions.bas:45,88-90`).
 
-Con un luminario por poste y ángulo de separación 0, que es el caso de los
-nueve estudios de referencia, ambas son neutras.
+Están portadas (`engine.geometry.Montaje`), pero **la interfaz no las ofrece de
+forma usable**, y por eso ninguna corrida de referencia las usa:
+
+* En la biblioteca de luminarios (`Fixtures!U36:V36`) los encabezados existen y
+  están traducidos, pero las celdas de captura de los luminarios agregados por
+  el usuario quedan vacías.
+* En la hoja de alta (`Add IES Files`) sí hay dónde escribirlas —columnas **M**
+  y **N**, una por luminario— y `ReadISO.bas:132-133,146-147` las lee de ahí,
+  con 1 y 0 por omisión. Pero sus encabezados son **los dos únicos en inglés**
+  de esa fila («Fixtures per Pole (1 or 2)», «Separation Angle (if 2 fixtures
+  per pole)») mientras las cuatro columnas vecinas están en español, y son las
+  únicas sin el marcador de ayuda `?`. La inclinación sí llegó a traducirse;
+  esto no.
+
+O sea que se puede capturar, pero no se anuncia. Quien use la herramienta en
+español no tiene forma de saber que existe.
+
+### No confundirla con el doble brazo del camellón
+
+Son mecanismos distintos y confundirlos duplica el DPEA.
+
+En **central doble** la herramienta ya pone dos luminarios por poste: lo hace la
+disposición misma, con `numPoleSides = 2` y `adjY_median = 1`, que saca los dos
+brazos del eje del camellón en direcciones opuestas
+(`FixturePositions.bas:60-62,80-83`). Eso es independiente de
+`selectedFixturesPerPole`, y es lo que hace que el DPEA cuente dos luminarios
+por tramo en esa disposición sin tocar nada más.
+
+`selectedFixturesPerPole` es un multiplicador aparte que aplica a **cualquier**
+disposición. Combinado con central doble daría cuatro brazos por poste y cuatro
+veces la carga del tramo. El original lo permite y el port lo replica, pero es
+casi seguro que no sea lo que alguien quiere.

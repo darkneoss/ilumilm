@@ -62,10 +62,13 @@ def test_las_filas_con_celdas_de_calculo_estan_dentro_de_la_comparativa(html):
 
 
 def test_los_datos_de_planificacion_van_completos(html):
+    """Incluidos los dos esquemas acotados: la seccion transversal (que lleva
+    `data-seccion`, de donde el script la toma para seguir a la altura) y la
+    planta, cuya cota de interpostal dice "entre postes"."""
     for texto in ("Datos de planificación", "Perfil de la vía pública",
-                  "Disposición de los luminarios", "Fotometría de los luminarios",
-                  "Camino peatonal", "Factor de mantenimiento",
-                  "Inclinación del brazo"):
+                  "Disposición de los luminarios", "Camino peatonal",
+                  "Factor de mantenimiento", "Inclinación del brazo",
+                  'data-seccion="1"', "entre postes"):
         assert texto in html, texto
 
 

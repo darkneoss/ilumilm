@@ -26,6 +26,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Sequence
 
 from . import nom
+from . import esquema
 from .geometry import Vialidad, paso_malla, posiciones_luminarios
 
 TITULO = "Estudio de alumbrado público"
@@ -208,35 +209,6 @@ def _fila(i: int, r: Dict[str, Any]) -> str:
              fab=escape(r["fabricante"] or ""), w=_num(r["watts"], 1))
 
 
-def _fotometria(res: Sequence[Dict[str, Any]]) -> str:
-    """Tabla de los datos que salen del .ies, no del calculo.
-
-    Aqui NO van las intensidades maximas sobre la horizontal (los cd/klm con
-    que los fabricantes declaran el control del deslumbramiento). Estuvieron un
-    rato y se quitaron: son candelas, la unica unidad del reporte que el motor
-    no maneja en ninguna otra parte, no son criterio de la NOM-013 --que evalua
-    iluminancia, uniformidad y DPEA-- y no habia forma de contrastarlas contra
-    la herramienta de referencia. Un numero que nadie puede verificar y que no
-    decide nada solo le quita peso a los que si deciden.
-    """
-    filas = []
-    for r in res:
-        flujo = r.get("flujo_lm")
-        filas.append(
-            "<tr><td>{cat}</td><td>{fab}</td><td class='n'>{w}</td>"
-            "<td class='n'>{fl}</td><td>{org}</td></tr>".format(
-                cat=escape(r["catalogo"]), fab=escape(r.get("fabricante") or "—"),
-                w=_num(r["watts"], 1),
-                fl="—" if not flujo else _num(flujo, 0),
-                org=escape(r.get("origen_flujo") or "—")))
-    return (
-        '<div class="tablabox"><table><thead><tr>'
-        "<th>Luminario</th><th>Fabricante</th><th class='n'>W</th>"
-        "<th class='n'>Flujo lm</th><th>Origen del flujo</th>"
-        "</tr></thead><tbody>{}</tbody></table></div>".format("".join(filas))
-    )
-
-
 def _rotulo_inclinacion(r: Dict[str, Any]) -> str:
     """Lo que hay que decir de la inclinacion, y solo si no es cero.
 
@@ -377,7 +349,31 @@ header .sub{color:var(--ink-2); margin-top:10px}
 .plan h3{font-size:14px; font-weight:650; color:var(--ink-2); margin-top:8px}
 .plan h3:first-of-type{margin-top:0}
 .plan table{min-width:560px}
+.dibujo{
+  background:var(--surface); border:1px solid var(--line); border-radius:6px;
+  padding:16px 18px; overflow-x:auto;
+}
 
+.esquema{width:100%; height:auto; display:block; overflow:visible}
+.esquema .acera{fill:var(--surface-2); stroke:var(--line)}
+.esquema .asfalto{fill:var(--ink-3); opacity:.35}
+.esquema .camellon{fill:var(--ok); opacity:.30}
+.esquema .raya{stroke:var(--surface); stroke-width:1.4; stroke-dasharray:7 7}
+.esquema .poste{stroke:var(--ink-2); stroke-width:3; stroke-linecap:round}
+.esquema .brazo{stroke:var(--ink-2); stroke-width:2}
+.esquema .base{fill:var(--ink-2)}
+.esquema .lum rect{fill:var(--amber); stroke:var(--amber-txt); stroke-width:.8}
+.esquema .lum .haz{stroke:var(--amber); stroke-width:2; stroke-linecap:round; opacity:.75}
+.esquema .lumpt{fill:var(--amber); stroke:var(--amber-txt); stroke-width:.8}
+.esquema .cota line{stroke:var(--slate); stroke-width:1}
+.esquema .cota .rem{stroke-width:1.4}
+.esquema .cota text{
+  fill:var(--slate); font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:12px; text-anchor:middle;
+}
+.esquema .pie{
+  fill:var(--ink-3); font-family:Archivo,sans-serif; font-size:11px;
+}
 .tablabox{overflow-x:auto; border:1px solid var(--line); border-radius:6px; background:var(--surface)}
 table{border-collapse:collapse; width:100%; min-width:720px; color:var(--ink)}
 th,td{padding:13px 14px; text-align:left; border-bottom:1px solid var(--line)}
@@ -671,6 +667,48 @@ JS = r"""
       return '<div><span class="k">' + kv[0] + '</span><span class="v">' +
              kv[1] + '</span></div>';
     }).join('');
+
+    dibuja(S, H);
+  }
+
+  // Los dos esquemas acotados siguen a los controles. Se mueven cuatro
+  // elementos y se estira el viewBox, en vez de rehacer el SVG: el dibujo es
+  // el mismo, solo cambia la altura del poste y lo que dicen las cotas.
+  //
+  // Sin esto el dibujo diria una cosa y el control de arriba otra, que es peor
+  // que no tener dibujo.
+  function dibuja(S, H){
+    var sec = document.querySelector('svg[data-seccion]');
+    if (sec) {
+      var k = +sec.getAttribute('data-k');
+      var yTop = -H * k;
+      var arriba = yTop - 26, alto = -arriba + 78;
+      sec.setAttribute('viewBox', '0 ' + arriba.toFixed(1) + ' 720 ' + alto.toFixed(1));
+      sec.querySelectorAll('[data-poste]').forEach(function(el){
+        el.setAttribute('y2', yTop.toFixed(1));
+      });
+      sec.querySelectorAll('[data-brazo]').forEach(function(el){
+        el.setAttribute('y1', yTop.toFixed(1)); el.setAttribute('y2', yTop.toFixed(1));
+      });
+      sec.querySelectorAll('[data-lum]').forEach(function(el){
+        el.setAttribute('transform', 'translate(' + el.getAttribute('data-x') + ' ' +
+          yTop.toFixed(1) + ') rotate(' + el.getAttribute('data-giro') + ')');
+      });
+      var ca = sec.querySelector('.cota-altura');
+      if (ca) {
+        var ls = ca.querySelectorAll('line'), ym = yTop / 2;
+        ls[0].setAttribute('y1', yTop.toFixed(1));
+        ls[1].setAttribute('y1', yTop.toFixed(1)); ls[1].setAttribute('y2', yTop.toFixed(1));
+        var tx = ca.querySelector('text'), xt = +tx.getAttribute('x');
+        tx.setAttribute('y', ym.toFixed(1));
+        tx.setAttribute('transform', 'rotate(-90 ' + xt + ' ' + ym.toFixed(1) + ')');
+        tx.textContent = fmt(H, 2) + ' m';
+      }
+      var pie = sec.querySelector('.pie');
+      if (pie) pie.setAttribute('y', (alto + arriba - 8).toFixed(1));
+    }
+    var cs = document.querySelector('.cota-s text');
+    if (cs) cs.textContent = fmt(S, 2) + ' m entre postes';
   }
 
   document.getElementById('imprimir').addEventListener('click', function(){
@@ -724,6 +762,13 @@ def html(datos: Dict[str, Any]) -> str:
         "Single-side": "unilateral", "Staggered": "tresbolillo",
         "Median mounted": "central doble", "Opposite": "bilateral opuesta",
     }.get(v["disposicion"], v["disposicion"])
+
+    vial = Vialidad(
+        num_carriles=v["num_carriles"], ancho_carril=v["ancho_carril"],
+        camellon=v["camellon"], disposicion=v["disposicion"],
+        altura_montaje=v["altura_montaje"], interpostal=v["interpostal"],
+        retranqueo=v["retranqueo"], largo_brazo=v["largo_brazo"],
+        banqueta=v.get("banqueta", 0.0))
 
     # ------------------------------------------------------------------
     # Datos de planificacion
@@ -790,19 +835,20 @@ def html(datos: Dict[str, Any]) -> str:
             '<div><span class="k">{}</span><span class="v">{}</span></div>'.format(k, val)
             for k, val in pares) + "</div>"
 
+    # La inclinacion del dibujo solo se puede pintar si todos los luminarios
+    # comparten una: el esquema es uno solo para el estudio.
+    incls = {r.get("inclinacion_grados") or 0.0 for r in res}
+    incl_dibujo = incls.pop() if len(incls) == 1 else 0.0
+
     plan_html = (
         "<h3>Perfil de la vía pública</h3>" + _rejilla(perfil)
+        + '<div class="dibujo">' + esquema.seccion(vial, incl_dibujo) + "</div>"
         + "<h3>Disposición de los luminarios</h3>" + _rejilla(disposicion)
-        + "<h3>Fotometría de los luminarios</h3>" + _fotometria(res)
+        + '<div class="dibujo">' + esquema.planta(vial) + "</div>"
     )
 
     ints, alts = b["interpostales"], b["alturas"]
     xs0 = b["xs_por_interpostal"][b["i_interpostal_estudio"]]
-    vial = Vialidad(
-        num_carriles=v["num_carriles"], ancho_carril=v["ancho_carril"],
-        camellon=v["camellon"], disposicion=v["disposicion"],
-        altura_montaje=v["altura_montaje"], interpostal=v["interpostal"],
-        retranqueo=v["retranqueo"], largo_brazo=v["largo_brazo"])
 
     return """<meta charset="utf-8">
 <title>{titulo}</title>

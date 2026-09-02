@@ -211,8 +211,6 @@ def _evalua_luminario(
                 "texto libre; indica 'watts' en la entrada para este luminario"
             )
 
-    flujo, origen_flujo = foto.flujo_luminario()
-
     malla = calc.calcula(v, foto, llf_total, modo, inclinacion)
     comparacion_modos = calc.comparar_modos(v, foto, llf_total, inclinacion)
 
@@ -238,8 +236,6 @@ def _evalua_luminario(
         "watts": watts,
         "origen_watts": origen_watts,
         "inclinacion_grados": inclinacion,
-        "flujo_lm": flujo,
-        "origen_flujo": origen_flujo,
         "n_luminarios_por_tramo": n_luminarios_tramo,
         "watts_conectados_tramo": watts_conectados_tramo,
         "dpea_w_m2": dpea_calculado,

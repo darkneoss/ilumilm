@@ -174,17 +174,22 @@ clasificación, y esa no se deduce de la geometría.
 
 ## El reporte
 
-Abre con **Datos de planificación**: el perfil de la vía, la disposición de los
-luminarios y la fotometría de cada uno (fabricante, potencia y flujo luminoso,
-con el origen del flujo, que sale declarado del `.ies` o integrado de la
-distribución cuando el archivo es de fotometría absoluta).
+Abre con **Datos de planificación**: el perfil de la vía y la disposición de los
+luminarios, cada uno con su **esquema acotado**. La sección transversal va a
+escala en los dos ejes y muestra el poste, el brazo, el cabeceo del luminario y
+el saliente sobre la calzada; la planta muestra un tramo interpostal con la
+posición de los postes, que es lo que distingue una disposición de otra.
 
-No lleva las intensidades máximas sobre la horizontal —los `cd/klm` con que los
-fabricantes declaran el control del deslumbramiento—. Estuvieron un rato y se
-quitaron: son candelas, la única unidad que el motor no maneja en ninguna otra
-parte, no son criterio de la NOM-013 y no había forma de contrastarlas contra la
-herramienta de referencia. Un número que nadie puede verificar y que no decide
-nada solo le quita peso a los tres que sí deciden.
+Los dos dibujos **siguen a los controles**: al mover la altura de montaje o la
+interpostal se redibujan y sus cotas cambian. Un esquema que dijera una cosa y
+el control de arriba otra sería peor que no tener esquema.
+
+No lleva datos fotométricos del luminario más allá de la potencia. El flujo, y
+sobre todo las intensidades máximas sobre la horizontal (los `cd/klm` con que se
+declara el control del deslumbramiento) estuvieron un rato y se quitaron: no son
+criterio de la NOM-013, las candelas son una unidad que el motor no maneja en
+ninguna otra parte, y esas intensidades no había forma de contrastarlas contra
+la herramienta de referencia.
 
 Ese bloque lleva **solo lo que los controles no mueven**. La interpostal y la
 altura de montaje quedan fuera a propósito: son deslizadores, y un bloque de

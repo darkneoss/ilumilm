@@ -101,24 +101,6 @@ class Fotometria:
         cc = _pliega_c(c, self.simetria, self.angulos_h)
         return _interp_bilineal(self.angulos_h, self.angulos_v, self.candelas, cc, gamma)
 
-    def flujo_luminario(self) -> tuple:
-        """Flujo luminoso del luminario en lumenes, y de donde salio.
-
-        Devuelve (lumenes, origen). En fotometria relativa manda lo declarado
-        en la cabecera --es el dato del fabricante-- y en fotometria absoluta
-        (lumenes = -1, como la mitad del catalogo) no hay declaracion y hay que
-        integrar la distribucion.
-
-        Se separa de `flujo_total` porque esa integra SIEMPRE, y para eso
-        existe: contrastar lo declarado contra lo medido y cachar un archivo
-        mal parseado. Aqui lo que se quiere es el mejor numero disponible para
-        ponerlo en el reporte.
-        """
-        if self.absoluta:
-            return self.flujo_total(), "integrado de la distribución"
-        declarado = self.lumenes_lampara * self.num_lamparas * self.multiplicador
-        return declarado, "declarado en el .ies"
-
     def flujo_total(self) -> float:
         """Integra la distribucion sobre la esfera, en lumenes.
 

@@ -20,7 +20,8 @@ Formato de `entrada.json`
     "altura_montaje": 8.0,
     "interpostal": 35.0,
     "retranqueo": 0.2,
-    "largo_brazo": 1.8
+    "largo_brazo": 1.8,
+    "banqueta": 0.0
   },
   "nom": {
     "clasificacion_vialidad": "Vías secundarias residencial Tipo A",
@@ -36,6 +37,9 @@ Formato de `entrada.json`
 
 Notas de diseño:
 
+- `banqueta` es opcional (0 por omisión) y **no entra en ningún cálculo**: solo
+  completa el perfil de la vía en el reporte. La NOM-013 6.1 excluye aceras del
+  DPEA y la malla del método IES cubre nada más la calzada.
 - `luminarios[].archivo` puede ser una ruta a un .ies (absoluta o relativa al
   directorio del propio `entrada.json`) o el nombre de un archivo ya indexado
   en `catalogo/` (se busca ahí si la ruta directa no existe).
@@ -119,6 +123,7 @@ def _arma_vialidad(datos: Dict[str, Any]) -> Vialidad:
             interpostal=float(_campo(v, "interpostal", "vialidad")),
             retranqueo=float(_campo(v, "retranqueo", "vialidad")),
             largo_brazo=float(_campo(v, "largo_brazo", "vialidad")),
+            banqueta=float(v.get("banqueta", 0.0)),
         )
     except (TypeError, ValueError) as exc:
         raise ErrorEstudio(f"Datos de vialidad inválidos: {exc}") from exc
@@ -206,6 +211,19 @@ def _evalua_luminario(
                 "texto libre; indica 'watts' en la entrada para este luminario"
             )
 
+    flujo, origen_flujo = foto.flujo_luminario()
+    # Maximos de intensidad sobre la horizontal, en la posicion instalada. La
+    # NOM-013 no los pide; van al reporte porque son el dato con el que se
+    # juzga el control de la luz que se escapa hacia los ojos.
+    intensidades = {}
+    for g in calc.GAMMAS_DESLUMBRAMIENTO:
+        cd, azimut = calc.intensidad_maxima_instalada(foto, g, inclinacion)
+        intensidades["{:g}".format(g)] = {
+            "cd": cd,
+            "cd_por_klm": (cd / (flujo / 1000.0)) if flujo > 0 else None,
+            "azimut_grados": azimut,
+        }
+
     malla = calc.calcula(v, foto, llf_total, modo, inclinacion)
     comparacion_modos = calc.comparar_modos(v, foto, llf_total, inclinacion)
 
@@ -231,6 +249,9 @@ def _evalua_luminario(
         "watts": watts,
         "origen_watts": origen_watts,
         "inclinacion_grados": inclinacion,
+        "flujo_lm": flujo,
+        "origen_flujo": origen_flujo,
+        "intensidades_max": intensidades,
         "n_luminarios_por_tramo": n_luminarios_tramo,
         "watts_conectados_tramo": watts_conectados_tramo,
         "dpea_w_m2": dpea_calculado,
@@ -397,6 +418,8 @@ def ejecuta(ruta_json: Path) -> Dict[str, Any]:
             "interpostal": v.interpostal,
             "retranqueo": v.retranqueo,
             "largo_brazo": v.largo_brazo,
+            "banqueta": v.banqueta,
+            "saliente_sobre_calzada": v.y_poste,
             "ancho_calzada": v.ancho_calzada,
             "ancho_sin_camellon": v.ancho_sin_camellon,
         },

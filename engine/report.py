@@ -208,6 +208,57 @@ def _fila(i: int, r: Dict[str, Any]) -> str:
              fab=escape(r["fabricante"] or ""), w=_num(r["watts"], 1))
 
 
+def _fotometria(res: Sequence[Dict[str, Any]]) -> str:
+    """Tabla de los datos que salen del .ies, no del calculo.
+
+    Las intensidades maximas a 70, 80 y 90 grados de la vertical son el dato
+    con el que se juzga cuanta luz se escapa hacia los ojos de quien circula.
+    La NOM-013 no las pide --sus tres criterios son iluminancia, uniformidad y
+    DPEA-- pero sin ellas el reporte no dice nada de la luz que no cae en el
+    pavimento, y esa es la que molesta.
+    """
+    filas = []
+    for r in res:
+        im = r.get("intensidades_max") or {}
+        celdas = []
+        for g in ("70", "80", "90"):
+            d = im.get(g)
+            celdas.append("—" if not d or d.get("cd_por_klm") is None
+                          else _num(d["cd_por_klm"], 0))
+        flujo = r.get("flujo_lm")
+        filas.append(
+            "<tr><td>{cat}</td><td>{fab}</td><td class='n'>{w}</td>"
+            "<td class='n'>{fl}</td><td class='n'>{c70}</td>"
+            "<td class='n'>{c80}</td><td class='n'>{c90}</td></tr>".format(
+                cat=escape(r["catalogo"]), fab=escape(r.get("fabricante") or "—"),
+                w=_num(r["watts"], 1),
+                fl="—" if not flujo else _num(flujo, 0),
+                c70=celdas[0], c80=celdas[1], c90=celdas[2]))
+    return (
+        '<div class="tablabox"><table><thead><tr>'
+        "<th>Luminario</th><th>Fabricante</th><th class='n'>W</th>"
+        "<th class='n'>Flujo lm</th>"
+        "<th class='n'>I 70° cd/klm</th><th class='n'>I 80° cd/klm</th>"
+        "<th class='n'>I 90° cd/klm</th>"
+        "</tr></thead><tbody>{}</tbody></table></div>".format("".join(filas))
+        # OJO: aqui NO va la clase `.notas`. Esa es para un contenedor --es un
+        # flex column-- y aplicada a un parrafo parte cada <strong> en su
+        # propia linea.
+        + '<p class="nota-foto">Las intensidades son el máximo en todas '
+        "las direcciones que forman ese ángulo con la vertical del terreno, ya "
+        "con el luminario montado: si el brazo va inclinado, esa vertical no es "
+        "el eje del luminario y los dos ángulos dejan de coincidir. Se "
+        "normalizan por el flujo del luminario, declarado en el propio archivo "
+        "fotométrico o integrado de la distribución cuando el archivo es de "
+        "fotometría absoluta. <strong>La NOM-013 no evalúa "
+        "deslumbramiento.</strong> Van aquí porque son lo único que este "
+        "reporte puede decir sobre la luz que no cae en el pavimento; no "
+        "equivalen a la clase D de la EN 13201 ni tienen por qué coincidir al "
+        "dígito con lo que imprime otra herramienta, que no documenta su "
+        "convención.</p>"
+    )
+
+
 def _rotulo_inclinacion(r: Dict[str, Any]) -> str:
     """Lo que hay que decir de la inclinacion, y solo si no es cero.
 
@@ -343,6 +394,13 @@ header .sub{color:var(--ink-2); margin-top:10px}
   color:var(--ink-3); font-family:Archivo,sans-serif;
 }
 .ident .v{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:15px; font-variant-numeric:tabular-nums}
+
+.plan{display:flex; flex-direction:column; gap:14px}
+.plan h3{font-size:14px; font-weight:650; color:var(--ink-2); margin-top:8px}
+.plan h3:first-of-type{margin-top:0}
+.plan table{min-width:560px}
+.nota-foto{font-size:13px; color:var(--ink-2); max-width:var(--medida)}
+.nota-foto strong{color:var(--ink)}
 
 .tablabox{overflow-x:auto; border:1px solid var(--line); border-radius:6px; background:var(--surface)}
 table{border-collapse:collapse; width:100%; min-width:720px; color:var(--ink)}
@@ -529,7 +587,10 @@ JS = r"""
   var aviso = document.getElementById('avisomov');
   var reset = document.getElementById('reset');
 
-  var filas = [].slice.call(document.querySelectorAll('tbody tr'));
+  // Acotado a la comparativa a proposito: 'tbody tr' a secas se lleva
+  // tambien las filas de la tabla de fotometria de los datos de planificacion,
+  // y el script muere al buscarles celdas que no tienen.
+  var filas = [].slice.call(document.querySelectorAll('#comparativa tr'));
   var detalles = [].slice.call(document.querySelectorAll('.detalle'));
   var svgs = [].slice.call(document.querySelectorAll('svg.isolux'));
   var NY = B.ys.length;
@@ -688,37 +749,75 @@ def html(datos: Dict[str, Any]) -> str:
         "Median mounted": "central doble", "Opposite": "bilateral opuesta",
     }.get(v["disposicion"], v["disposicion"])
 
-    ident = [
-        ("Pavimento", escape(pavimento)),
-        ("Carriles", "{} × {} m".format(v["num_carriles"], _num(v["ancho_carril"], 2))),
+    # ------------------------------------------------------------------
+    # Datos de planificacion
+    #
+    # Aqui va SOLO lo que los controles no mueven. La interpostal y la altura
+    # de montaje se quedan fuera a proposito: son deslizadores, y un bloque de
+    # datos que dijera un numero distinto al del control de arriba seria una
+    # trampa para quien audite el estudio. Van en el encabezado, que si se
+    # actualiza, y en el bloque de configuracion congelada del PDF.
+    # ------------------------------------------------------------------
+    perfil = []
+    if v.get("banqueta"):
+        perfil.append(("Camino peatonal", "{} m a cada lado".format(
+            _num(v["banqueta"], 2))))
+    perfil += [
+        ("Calzada", "{} carriles × {} m = {} m".format(
+            v["num_carriles"], _num(v["ancho_carril"], 2), _num(ancho, 2))),
         ("Camellón", "{} m".format(_num(v["camellon"], 2))),
-        ("Disposición", disp),
-        ("Retranqueo", "{} m".format(_num(v["retranqueo"], 2))),
-        ("Largo de brazo", "{} m".format(_num(v["largo_brazo"], 2))),
-        ("Ancho para DPEA", "{} m".format(_num(ancho, 2))),
-        ("LLD × LDD × BF", "{} × {} × {} = {}".format(
-            _num(p["lld"], 2), _num(p["ldd"], 2), _num(p["bf"], 2), _num(p["llf_total"], 3))),
+        ("Ancho total de la sección", "{} m".format(_num(v["ancho_calzada"], 2))),
+        ("Ancho para el DPEA", "{} m".format(_num(ancho, 2))),
+        ("Pavimento", escape(pavimento)),
+        ("Factor de mantenimiento", "{} × {} × {} = {}".format(
+            _num(p["lld"], 2), _num(p["ldd"], 2), _num(p["bf"], 2),
+            _num(p["llf_total"], 3))),
+    ]
+
+    central = v["disposicion"] == "Median mounted"
+    disposicion = [
+        ("Organización", disp),
+        ("Luminarios por tramo", "{:g}".format(res[0]["n_luminarios_por_tramo"])),
+        # En un poste central el retranqueo no entra al calculo --los dos
+        # brazos salen del eje del camellon-- y el "saliente sobre la calzada"
+        # tampoco significa nada. Imprimir el numero de todas formas invitaria
+        # a creer que se uso.
+        ("Retranqueo del poste", "no aplica (poste central)" if central
+         else "{} m".format(_num(v["retranqueo"], 2))),
+        ("Longitud del brazo", "{} m".format(_num(v["largo_brazo"], 2))),
+        ("Brazos desde el eje del camellón" if central else "Saliente sobre la calzada",
+         "± {} m".format(_num(v["largo_brazo"], 2)) if central
+         else "{} m".format(_num(
+             v.get("saliente_sobre_calzada", -v["retranqueo"] + v["largo_brazo"]), 3))),
         ("Criterio de azimut", "IESNA RP-8"),
     ]
-    # La inclinacion solo se lista si alguien la movio. El Excel de referencia
-    # la usa en el calculo y NO la escribe en su reporte, y eso costo una
-    # validacion entera (ver reference/VALIDACION.md): un estudio inclinado no
-    # debe verse igual que uno sin inclinar.
+    # La inclinacion se lista siempre, incluso en cero. Es la leccion que dejo
+    # la validacion (ver reference/VALIDACION.md): el Excel la usa en el
+    # calculo y NO la escribe en su reporte, asi que dos estudios con
+    # inclinaciones distintas salian indistinguibles. Un cero explicito cuesta
+    # una linea y cierra esa puerta.
+    #
     # Lista y no diccionario: un mismo .ies puede aparecer dos veces en el
     # estudio con inclinaciones distintas, y un dict por catalogo se comeria
     # una de las dos.
     grados = [(r["catalogo"], _num(r.get("inclinacion_grados") or 0.0, 1))
               for r in res]
     distintos = {g for _, g in grados}
-    if distintos != {"0.0"}:
-        if len(distintos) == 1:
-            ident.append(("Inclinación del brazo", distintos.pop() + "°"))
-        else:
-            ident.append(("Inclinación del brazo", "; ".join(
-                "{}: {}°".format(escape(cat), g) for cat, g in grados)))
-    ident_html = "".join(
-        '<div><span class="k">{}</span><span class="v">{}</span></div>'.format(k, val)
-        for k, val in ident
+    if len(distintos) == 1:
+        disposicion.append(("Inclinación del brazo", distintos.pop() + "°"))
+    else:
+        disposicion.append(("Inclinación del brazo", "; ".join(
+            "{}: {}°".format(escape(cat), g) for cat, g in grados)))
+
+    def _rejilla(pares):
+        return '<div class="ident">' + "".join(
+            '<div><span class="k">{}</span><span class="v">{}</span></div>'.format(k, val)
+            for k, val in pares) + "</div>"
+
+    plan_html = (
+        "<h3>Perfil de la vía pública</h3>" + _rejilla(perfil)
+        + "<h3>Disposición de los luminarios</h3>" + _rejilla(disposicion)
+        + "<h3>Fotometría de los luminarios</h3>" + _fotometria(res)
     )
 
     ints, alts = b["interpostales"], b["alturas"]
@@ -784,7 +883,10 @@ def html(datos: Dict[str, Any]) -> str:
     del estudio, que es de {sEst} m de interpostal y {hEst} m de altura de montaje.</p>
   </section>
 
-  <section class="ident">{ident}</section>
+  <section class="plan">
+    <h2>Datos de planificación</h2>
+    {plan}
+  </section>
   <section class="ident solo-print" id="cfgprint"></section>
 
   <section>
@@ -795,7 +897,7 @@ def html(datos: Dict[str, Any]) -> str:
         <th class="n">E<sub>min</sub> lx</th><th class="n">Uniformidad</th>
         <th class="n">DPEA W/m²</th><th>Veredicto</th>
       </tr></thead>
-      <tbody>{filas}</tbody>
+      <tbody id="comparativa">{filas}</tbody>
     </table></div>
   </section>
 
@@ -846,7 +948,7 @@ const B = {barrido};
         css=CSS,
         js=JS,
         titulo=TITULO,
-        ident=ident_html,
+        plan=plan_html,
         opciones=opciones,
         maxS=len(ints) - 1,
         maxH=len(alts) - 1,

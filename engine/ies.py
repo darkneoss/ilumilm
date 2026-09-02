@@ -101,6 +101,45 @@ class Fotometria:
         cc = _pliega_c(c, self.simetria, self.angulos_h)
         return _interp_bilineal(self.angulos_h, self.angulos_v, self.candelas, cc, gamma)
 
+    def flujo_luminario(self) -> tuple:
+        """Flujo luminoso del luminario en lumenes, y de donde salio.
+
+        Devuelve (lumenes, origen). En fotometria relativa manda lo declarado
+        en la cabecera --es el dato del fabricante-- y en fotometria absoluta
+        (lumenes = -1, como la mitad del catalogo) no hay declaracion y hay que
+        integrar la distribucion.
+
+        Se separa de `flujo_total` porque esa integra SIEMPRE, y para eso
+        existe: contrastar lo declarado contra lo medido y cachar un archivo
+        mal parseado. Aqui lo que se quiere es el mejor numero disponible para
+        ponerlo en el reporte.
+        """
+        if self.absoluta:
+            return self.flujo_total(), "integrado de la distribucion"
+        declarado = self.lumenes_lampara * self.num_lamparas * self.multiplicador
+        return declarado, "declarado en el .ies"
+
+    def intensidad_maxima_en(self, gamma: float) -> tuple:
+        """Intensidad maxima a un gamma dado, y el plano C donde ocurre.
+
+        Devuelve (candelas, C en grados). Barre los planos C medidos en el
+        archivo, no una reticula arbitraria: `intensidad` ya resuelve la
+        simetria, asi que los angulos horizontales del propio archivo cubren
+        todos los planos distintos que hay. Interpolar solo en gamma deja el
+        maximo exacto respecto a lo medido.
+
+        Sirve para el limite de deslumbramiento: la NOM-013 no lo pide, pero es
+        el dato con el que los fabricantes y las herramientas de diseno
+        declaran el control de la luz sobre la horizontal, y a 70/80/90 grados
+        es donde se mira.
+        """
+        mejor, mejor_c = -1.0, 0.0
+        for c in self.angulos_h:
+            i = self.intensidad(gamma, c)
+            if i > mejor:
+                mejor, mejor_c = i, c
+        return mejor, mejor_c
+
     def flujo_total(self) -> float:
         """Integra la distribucion sobre la esfera, en lumenes.
 

@@ -138,3 +138,21 @@ def test_declarar_luminarios_por_poste_es_un_error_y_no_un_campo_ignorado():
         ruta.write_text(json.dumps(entrada), encoding="utf-8")
         with pytest.raises(ErrorEstudio, match="central doble"):
             ejecuta(ruta)
+
+
+def test_la_banqueta_no_toca_el_calculo():
+    """Es un campo de dibujo, no de fisica: la NOM-013 6.1 excluye aceras del
+    DPEA y la malla del metodo IES cubre solo la calzada. Si ensanchar la acera
+    moviera un lux, seria un bug."""
+    from engine import calc, ies
+
+    foto = ies.lee("catalogo/V1050UN2M50.ies")
+    sin_acera = Vialidad(2, 3.5, 0.0, "unilateral", 8.0, 35.0, 0.2, 1.8)
+    con_acera = Vialidad(2, 3.5, 0.0, "unilateral", 8.0, 35.0, 0.2, 1.8, banqueta=4.0)
+
+    assert posiciones_luminarios(sin_acera) == posiciones_luminarios(con_acera)
+    a = calc.calcula(sin_acera, foto, 0.765)
+    b = calc.calcula(con_acera, foto, 0.765)
+    assert (a.promedio, a.minimo, a.maximo) == (b.promedio, b.minimo, b.maximo)
+    assert sin_acera.ancho_calzada == con_acera.ancho_calzada
+    assert sin_acera.ancho_sin_camellon == con_acera.ancho_sin_camellon

@@ -21,6 +21,9 @@ siempre los valores por omisión, que cubren el caso típico.
 - altura de montaje [m], distancia interpostal [m]
 - retranqueo del poste [m] (del poste a la orilla de la calzada)
 - largo del brazo [m]
+- ancho de banqueta [m], **opcional y solo cosmético**: completa el perfil de la
+  vía en el reporte y no entra en ningún cálculo. No lo preguntes; úsalo si el
+  usuario lo menciona al describir la sección.
 
 **Clasificación y pavimento**
 - una de las 7 clasificaciones de la NOM (ver `engine/nom.py`)

@@ -66,7 +66,15 @@ def normaliza_disposicion(texto: str) -> str:
 
 @dataclass(frozen=True)
 class Vialidad:
-    """Los datos de entrada geometricos de un estudio. Todo en metros."""
+    """Los datos de entrada geometricos de un estudio. Todo en metros.
+
+    `banqueta` es la excepcion: NO entra en ningun calculo. Existe solo para
+    que el perfil de la via del reporte este completo. La NOM-013 6.1 excluye
+    aceras y camellones del DPEA, y la malla del metodo IES cubre unicamente la
+    calzada, asi que ensanchar la acera no puede mover un resultado. Va
+    documentado aqui porque un campo de geometria que no afecta la geometria
+    del calculo es justo el tipo de cosa que alguien "arregla" por error.
+    """
 
     num_carriles: int
     ancho_carril: float
@@ -76,6 +84,7 @@ class Vialidad:
     interpostal: float        # distancia entre postes consecutivos del mismo lado
     retranqueo: float         # "pole setback": del poste a la orilla de la calzada
     largo_brazo: float
+    banqueta: float = 0.0     # ancho de acera a cada lado; SOLO para el perfil dibujado
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "disposicion", normaliza_disposicion(self.disposicion))
@@ -84,6 +93,8 @@ class Vialidad:
         for campo in ("ancho_carril", "altura_montaje", "interpostal"):
             if getattr(self, campo) <= 0:
                 raise ValueError("{} debe ser > 0".format(campo))
+        if self.banqueta < 0:
+            raise ValueError("banqueta no puede ser negativa")
 
     @property
     def ancho_calzada(self) -> float:

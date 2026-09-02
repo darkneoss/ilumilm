@@ -102,7 +102,8 @@ Crea `estudios/<nombre>/entrada.json`:
     "altura_montaje": 8.0,
     "interpostal": 35.0,
     "retranqueo": 0.2,
-    "largo_brazo": 1.8
+    "largo_brazo": 1.8,
+    "banqueta": 0.0
   },
   "nom": {
     "clasificacion_vialidad": "Vías secundarias residencial Tipo A",
@@ -122,6 +123,7 @@ Crea `estudios/<nombre>/entrada.json`:
 | `ancho_carril` | Ancho de **un** carril, no el total de la calzada. |
 | `retranqueo` | Del poste a la orilla de la calzada. Si el brazo lo supera, el luminario queda montado sobre el arroyo vehicular. |
 | `pavimento` | `R1` a `R4`. **R2 por omisión**, salvo indicación contraria. |
+| `banqueta` | Opcional, 0 por omisión. Ancho de acera a cada lado. **No entra en ningún cálculo**: solo completa el perfil de la vía en el reporte. |
 | `perdidas` | Opcional. Por omisión `0.85 × 0.90 × 1.0` (LED). El factor de balastro es 1 porque el driver ya viene en la potencia nominal. |
 | `luminarios[].archivo` | Ruta a un `.ies` o nombre de uno indexado en `catalogo/`. |
 | `luminarios[].watts` | Opcional. **Sobrescribe** los watts del archivo. Úsalo cuando el `.ies` no los declara o evalúas otro driver. |
@@ -171,6 +173,23 @@ clasificación, y esa no se deduce de la geometría.
 ---
 
 ## El reporte
+
+Abre con **Datos de planificación**: el perfil de la vía, la disposición de los
+luminarios y la fotometría de cada uno, incluidas las intensidades máximas a
+70°, 80° y 90° de la vertical del terreno —el único dato que este reporte puede
+dar sobre la luz que no cae en el pavimento—. La NOM-013 no evalúa
+deslumbramiento, así que van como información y no como criterio.
+
+Ese bloque lleva **solo lo que los controles no mueven**. La interpostal y la
+altura de montaje quedan fuera a propósito: son deslizadores, y un bloque de
+datos que dijera un número distinto al del control sería una trampa para quien
+audite el estudio. Esos dos van en el encabezado, que sí se actualiza, y en el
+bloque de configuración congelada del PDF.
+
+La inclinación del brazo se imprime **siempre, incluso en cero**. Es la lección
+que dejó la validación: la herramienta que se sustituye la usa en el cálculo y
+no la escribe en su reporte, así que dos estudios con inclinaciones distintas
+salían indistinguibles.
 
 Además de la comparativa y el veredicto por criterio, deja mover tres
 parámetros sin volver a correr nada:

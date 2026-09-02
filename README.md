@@ -9,7 +9,7 @@ dependencias externas** — solo biblioteca estándar.
 
 ## Estado de validación
 
-Contrastado contra 22 corridas reales de la herramienta que reemplaza, doce de
+Contrastado contra 24 corridas reales de la herramienta que reemplaza, trece de
 ellas con coincidencia exacta:
 
 | Métrica | Error máximo |
@@ -181,6 +181,12 @@ el DPEA se recalcula al mover el interpostal, porque cambia el área del tramo.
 ---
 
 ## Advertencias
+
+**Con carriles impares y camellón, la malla queda comprimida.** La herramienta
+de referencia no inserta el camellón en la rejilla cuando el número de carriles
+es impar, y el motor la replica —es fidelidad deliberada, está medida en
+`reference/VALIDACION.md`—. El tramo evaluado no coincide entonces con la
+sección transversal real. Tenlo presente antes de entregar un estudio así.
 
 **Es un cálculo de diseño, no un dictamen.** La malla fina del método IES —paso
 de `interpostal/10` topado a 5 m, dos puntos por carril, un tramo interpostal

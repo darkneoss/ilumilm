@@ -1,6 +1,6 @@
 # Validación del motor contra estudios reales
 
-Contraste de `engine/` contra 22 corridas reales de la herramienta Excel de
+Contraste de `engine/` contra 24 corridas reales de la herramienta Excel de
 referencia, extraídas por `tools/extraer_casos_sead.py` y congeladas en
 `reference/casos_sead.json`. La suite vive en `tests/test_regresion_sead.py`.
 
@@ -38,6 +38,8 @@ precargado en el Excel cuyo archivo .ies no tenemos.
 | estudio-10 | V2100UN2M50 | 3x3.50 cam 0.0 h7 S40.00 tresbolillo | 0° | 32.009 | 32.009 | +0.000% | 9.523 | 9.523 | +0.000% | 61.149 | 61.149 | +0.000% |
 | estudio-11 | V1070UN2M50 | 3x3.50 cam 0.0 h7 S40.00 central doble | 0° | 19.944 | 19.944 | -0.002% | 8.198 | 8.197 | -0.002% | 46.983 | 46.987 | +0.008% |
 | estudio-11 | V2100UN2M50 | 3x3.50 cam 0.0 h7 S40.00 central doble | 0° | 22.764 | 22.764 | +0.000% | 7.509 | 7.509 | +0.000% | 47.763 | 47.763 | +0.000% |
+| estudio-12 | V1070UN2M50 | 3x3.50 cam 1.0 h7 S40.00 central doble | 0° | 19.828 | 19.828 | +0.000% | 8.061 | 8.061 | -0.004% | 50.087 | 50.084 | -0.007% |
+| estudio-12 | V2100UN2M50 | 3x3.50 cam 1.0 h7 S40.00 central doble | 0° | 22.524 | 22.524 | +0.000% | 7.214 | 7.214 | +0.000% | 47.565 | 47.565 | +0.000% |
 
 ## Error máximo observado
 
@@ -48,8 +50,8 @@ precargado en el Excel cuyo archivo .ies no tenemos.
 | Maximo | 0.008 % |
 | Uniformidad | 0.006 % |
 
-Doce de los veintidós casos coinciden con la referencia a cero exacto. El
-residuo de los otros diez está siempre en los `.ies` grandes (V1070, V3160:
+Trece de los veinticuatro casos coinciden con la referencia a cero exacto. El
+residuo de los otros once está siempre en los `.ies` grandes (V1070, V3160:
 ~250 KB, malla angular fina) y es de interpolación, no de geometría.
 
 ## Cobertura
@@ -74,6 +76,28 @@ central doble:
   descarta; el VBA lo suma y lo resta igual, con un comentario propio admitiendo
   que sobra. Que la corrida cuadre al 0.008 % con retranqueo distinto de cero
   confirma la decisión por segunda vez y con otra geometría.
+
+## La malla comprimida con carriles impares: «Ambigüedad A4» medida
+
+El estudio-12 es el mismo caso central doble del 11 pero con **camellón de 1 m
+y tres carriles**, es decir un número impar. La especificación tenía esto
+marcado como pendiente de confirmar (`ESPEC_SEAD_ILUMINANCIA.md`, A4): el VBA
+solo inserta el camellón en las coordenadas Y de la rejilla cuando el número de
+carriles es **par**, porque con impares pone `medianYvalue = 0` y baja la
+bandera.
+
+La corrida lo confirma: cuadra al 0.007 % **replicando la rareza**. Con 3
+carriles de 3.5 m y 1 m de camellón, la rejilla cubre 10.5 m cuando la sección
+física mide 11.5, y a la vez los postes sí se colocan en el eje contando el
+camellón. La malla y los postes están medidos con reglas distintas.
+
+Esto no es un defecto del port: es fidelidad, que es el objetivo declarado. Pero
+sí es un límite que conviene tener presente al entregar un estudio con carriles
+impares y camellón, porque el tramo evaluado no es exactamente la sección
+transversal real. El motor reproduce lo que la herramienta que se sustituye
+entregó, y eso es lo que permite defender los estudios ya emitidos; si algún día
+se quiere corregir, tiene que ser una decisión consciente y con su propia
+validación, no un arreglo silencioso.
 
 ## Cuatro correcciones que salieron de esta validación
 

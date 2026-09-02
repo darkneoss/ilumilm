@@ -3,8 +3,8 @@
 Estudios de iluminación vial y evaluación de cumplimiento de la
 **NOM-013-ENER-2013** a partir de archivos fotométricos `.ies`.
 
-Sustituye a la herramienta Excel *SEAD Street Lighting Tool*, que solo corre en
-Office de 32 bits. Este motor corre en cualquier Python 3.10 o superior, **sin
+Sustituye a una herramienta Excel heredada, que solo corre en Office de 32
+bits. Este motor corre en cualquier Python 3.10 o superior, **sin
 dependencias externas** — solo biblioteca estándar.
 
 ## Estado de validación
@@ -19,7 +19,7 @@ Contrastado contra 14 corridas reales de la herramienta que reemplaza:
 | Uniformidad | 0.139 % |
 
 El detalle está en [`reference/VALIDACION.md`](reference/VALIDACION.md) y la
-suite en `tests/test_regresion_sead.py`.
+suite de regresión en `tests/`.
 
 **Disposiciones validadas: unilateral y central doble.** Tresbolillo y bilateral
 opuesta no aparecen en ninguna corrida de referencia disponible. Comparten la

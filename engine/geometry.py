@@ -1,10 +1,13 @@
 """Geometria de la vialidad: malla de calculo y posiciones de luminarios.
 
 Puerto fiel de los modulos VBA `MakeMeasurementGrid` y `FixturePositions` del
-SEAD Street Lighting Tool v1.7.6 (ver reference/sead_vba/). Se replican tambien
-las rarezas del original, marcadas con "RAREZA SEAD", porque el objetivo es que
-los numeros coincidan con los del Excel, no que sean los que a nosotros nos
-parezcan mejores.
+SEAD Street Lighting Tool v1.8.1 (ver reference/sead_vba_1.8.1/), que es la
+version que genero los estudios de referencia. Se replican tambien las rarezas
+del original, marcadas con "RAREZA SEAD", porque el objetivo es que los numeros
+coincidan con los del Excel, no que sean los que a nosotros nos parezcan
+mejores. Donde importa la diferencia con la v1.7.6 -- conservada en
+reference/sead_vba_1.7.6/ porque las especificaciones citan sus lineas -- va
+dicho en el docstring de la funcion.
 
 Sistema de coordenadas
 ----------------------
@@ -161,22 +164,31 @@ def posiciones_luminarios(v: Vialidad) -> List[Tuple[float, float, int]]:
     doble la mitad de ellos mira al lado contrario, y usar la misma orientacion
     para todos ilumina la calzada con la distribucion de la acera.
 
-    RAREZA SEAD: la malla cubre 4 interpostales pero se generan luminarios hasta
-    5*interpostal, y la ventana de evaluacion es [S, 2S). Es decir, la ventana
-    tiene UN luminario aguas arriba y CUATRO aguas abajo: el arreglo no es
-    simetrico respecto al tramo evaluado. Las contribuciones lejanas son
-    despreciables, pero la asimetria es real y esta en el original.
+    RAREZA SEAD: la malla cubre 4 interpostales y la ventana de evaluacion es
+    [S, 2S). Es decir, la ventana tiene UN luminario aguas arriba y TRES aguas
+    abajo: el arreglo no es simetrico respecto al tramo evaluado. Las
+    contribuciones lejanas son despreciables, pero la asimetria es real y esta
+    en el original.
+
+    CONTEO: `CInt(gridlength / polespacing) + 1` luminarios por lado, o sea 5
+    en unilateral (x = 0, S, 2S, 3S, 4S) y 10 repartidos en las demas
+    disposiciones. La v1.7.6 generaba uno mas por lado (hasta x = 5S) por un
+    `ReDim FPArrayX(n + 1)` con base 0; la 1.8.1 lo corrigio. La diferencia es
+    de ~0.001 % en la mayoria de los casos, pero con el conteo nuevo la mitad
+    de los estudios de referencia cuadran al 0.0000 % exacto y el peor error de
+    la suite baja de 0.14 % a 0.007 %, asi que el conteo bueno es este.
     """
     s = v.interpostal
     largo = longitud_malla(s)
     y_cerca = v.y_poste
     y_lejos = v.num_carriles * v.ancho_carril + v.camellon + v.retranqueo - v.largo_brazo
 
-    if v.disposicion == "Single-side":
-        n = int(largo / s)
-        return [(i * s, y_cerca, 1) for i in range(n + 2)]
+    n_por_lado = int(round(largo / s)) + 1
 
-    n = int(largo / s) * 2
+    if v.disposicion == "Single-side":
+        return [(i * s, y_cerca, 1) for i in range(n_por_lado)]
+
+    n = 2 * n_por_lado - 2
     puntos: List[Tuple[float, float, int]] = []
     centro = (v.num_carriles * v.ancho_carril + v.camellon) / 2.0
     for i in range(n + 2):

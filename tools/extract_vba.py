@@ -1,11 +1,28 @@
 """Extrae los modulos VBA del SEAD Street Lighting Tool.
 
-Los streams _VBA_PROJECT_CUR/VBA/* estan comprimidos con el algoritmo RLE de
-MS-OVBA. olefile nos da el stream crudo; la descompresion son las ~45 lineas de
-abajo, asi evitamos depender de oletools (que no esta instalado).
+Uso:
+    python tools/extract_vba.py <libro.xls|.xlsm> <directorio_salida>
+
+    python tools/extract_vba.py "assets/SEAD Street Lighting TOOL.xlsm"         reference/sead_vba_1.8.1
+    python tools/extract_vba.py "assets/SEAD street lighting tool.xls"         reference/sead_vba_1.7.6
+
+Los streams VBA estan comprimidos con el algoritmo RLE de MS-OVBA. olefile nos
+da el stream crudo; la descompresion son las ~45 lineas de abajo, asi evitamos
+depender de oletools (que no esta instalado).
+
+Acepta las dos envolturas, porque las dos versiones del libro que interesan
+vienen en formatos distintos y el codigo no es el mismo (ver
+reference/sead_vba_1.8.1/README.md):
+
+* `.xls`  es un contenedor OLE completo, y el proyecto vive en
+  `_VBA_PROJECT_CUR/VBA/*` (rutas de tres niveles).
+* `.xlsm` es un ZIP, y el proyecto es un OLE **anidado** en
+  `xl/vbaProject.bin`, donde las rutas son de dos niveles (`VBA/<modulo>`).
 """
+import io
 import struct
 import sys
+import zipfile
 from pathlib import Path
 
 import olefile
@@ -68,14 +85,27 @@ def find_source(stream: bytes) -> bytes:
     raise ValueError("no se encontro el codigo fuente en el stream")
 
 
+def abre_proyecto(libro: Path) -> "olefile.OleFileIO":
+    """Devuelve el contenedor OLE del proyecto VBA, venga de .xls o de .xlsm."""
+    if libro.suffix.lower() in (".xlsm", ".xlsb", ".xlam"):
+        with zipfile.ZipFile(libro) as z:
+            return olefile.OleFileIO(io.BytesIO(z.read("xl/vbaProject.bin")))
+    return olefile.OleFileIO(str(libro))
+
+
 def main(xls: Path, outdir: Path) -> None:
     outdir.mkdir(parents=True, exist_ok=True)
-    ole = olefile.OleFileIO(str(xls))
+    ole = abre_proyecto(xls)
+    escritos = 0
     for entry in ole.listdir():
-        if len(entry) < 3 or entry[1] != "VBA":
+        # .xls: ["_VBA_PROJECT_CUR", "VBA", "<modulo>"]
+        # .xlsm: ["VBA", "<modulo>"]
+        if "VBA" not in entry:
             continue
         name = entry[-1]
-        if name in ("_VBA_PROJECT", "dir"):
+        if name in ("_VBA_PROJECT", "dir", "VBA") or name.startswith("__SRP_"):
+            # __SRP_* son la cache compilada, no fuente. Saltarlos evita cien
+            # lineas de "no se encontro el codigo fuente" en el .xlsm.
             continue
         try:
             source = find_source(ole.openstream(entry).read())
@@ -84,7 +114,9 @@ def main(xls: Path, outdir: Path) -> None:
             continue
         dest = outdir / f"{name}.bas"
         dest.write_bytes(source)
+        escritos += 1
         print(f"  -> {dest.name} ({len(source)} bytes)")
+    print(f"{escritos} modulos escritos en {outdir}")
 
 
 if __name__ == "__main__":

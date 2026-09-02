@@ -186,7 +186,7 @@ def _evalua_luminario(
         ancho_m=v.ancho_sin_camellon,
     )
 
-    return {
+    return foto, watts, {
         "archivo": str(ruta),
         "catalogo": foto.catalogo,
         "fabricante": foto.fabricante,
@@ -217,6 +217,84 @@ def _evalua_luminario(
                 "dpea": vars(resultado_nom.dpea),
             },
         },
+    }
+
+
+# ---------------------------------------------------------------------------
+# Barrido de interpostal x altura de montaje
+# ---------------------------------------------------------------------------
+
+# Rangos usuales de alumbrado vial. Se incluyen siempre los valores del propio
+# estudio, aunque no caigan en la retícula, para que el reporte pueda volver a
+# la configuración especificada de forma exacta.
+INTERPOSTALES = [20.0 + 2.5 * i for i in range(13)]      # 20 a 50 m
+ALTURAS = [6.0 + 0.5 * i for i in range(13)]             # 6 a 12 m
+
+
+def _eje(valores: List[float], propio: float) -> List[float]:
+    """Retícula del barrido con el valor del estudio insertado en su lugar."""
+    if any(abs(x - propio) < 1e-9 for x in valores):
+        return list(valores)
+    return sorted(valores + [propio])
+
+
+def _barrido(
+    v: Vialidad,
+    fotos: List[Any],
+    watts: List[float],
+    llf_total: float,
+    modo: str,
+) -> Dict[str, Any]:
+    """Precalcula la malla para cada combinación de interpostal y altura.
+
+    La clasificación de vialidad se resuelve en el navegador porque solo mueve
+    umbrales, pero la interpostal y la altura cambian la geometría, los ángulos
+    y el área del tramo, así que hay que volver a correr el motor. A 0.6 ms por
+    corrida el barrido completo cuesta menos de un segundo.
+
+    Las mallas se guardan con un decimal, que es exactamente la precisión con
+    que el reporte las dibuja. Los agregados van con precisión completa, para
+    que un veredicto justo en el límite no dependa del redondeo del mapa.
+    """
+    interpostales = _eje(INTERPOSTALES, v.interpostal)
+    alturas = _eje(ALTURAS, v.altura_montaje)
+    n_tramo = _luminarios_por_tramo(v.disposicion)
+
+    mallas: List[List[List[List[float]]]] = []
+    stats: List[List[List[List[float]]]] = []
+    xs_por_interpostal: List[List[float]] = []
+
+    for s_ in interpostales:
+        fila_m, fila_s = [], []
+        for h in alturas:
+            vv = Vialidad(v.num_carriles, v.ancho_carril, v.camellon, v.disposicion,
+                          h, s_, v.retranqueo, v.largo_brazo)
+            celda_m, celda_s = [], []
+            for foto in fotos:
+                m = calc.calcula(vv, foto, llf_total, modo)
+                celda_m.append([round(x, 1) for fila in m.e for x in fila])
+                celda_s.append([m.promedio, m.minimo, m.maximo, m.uniformidad])
+            fila_m.append(celda_m)
+            fila_s.append(celda_s)
+        mallas.append(fila_m)
+        stats.append(fila_s)
+        # Las X de la ventana evaluada dependen del interpostal; las Y no.
+        vv = Vialidad(v.num_carriles, v.ancho_carril, v.camellon, v.disposicion,
+                      v.altura_montaje, s_, v.retranqueo, v.largo_brazo)
+        m = calc.calcula(vv, fotos[0], llf_total, modo)
+        xs_por_interpostal.append([round(x, 3) for x in m.xs])
+
+    return {
+        "interpostales": interpostales,
+        "alturas": alturas,
+        "i_interpostal_estudio": interpostales.index(v.interpostal),
+        "i_altura_estudio": alturas.index(v.altura_montaje),
+        "xs_por_interpostal": xs_por_interpostal,
+        "ys": [round(y, 3) for y in calc.valores_y(v.num_carriles, v.ancho_carril, v.camellon)],
+        "watts_por_tramo": [w * n_tramo for w in watts],
+        "ancho_sin_camellon": v.ancho_sin_camellon,
+        "mallas": mallas,
+        "stats": stats,
     }
 
 
@@ -253,16 +331,19 @@ def ejecuta(ruta_json: Path) -> Dict[str, Any]:
     if not lista_luminarios:
         raise ErrorEstudio("La entrada no trae ningún luminario en 'luminarios'")
 
-    resultados: List[Dict[str, Any]] = []
+    evaluados: List[Any] = []
     for dato_luminario in lista_luminarios:
-        resultados.append(
+        evaluados.append(
             _evalua_luminario(
                 v, dato_luminario, llf_total, modo, vialidad_nom, pavimento_nom, dir_entrada
             )
         )
 
     # Orden: primero los que cumplen, y entre ellos menor potencia primero.
-    resultados.sort(key=lambda r: (not r["nom"]["cumple"], r["watts"]))
+    evaluados.sort(key=lambda e: (not e[2]["nom"]["cumple"], e[2]["watts"]))
+    fotos = [e[0] for e in evaluados]
+    watts_lista = [e[1] for e in evaluados]
+    resultados = [e[2] for e in evaluados]
 
     salida = {
         "entrada": str(ruta_json),
@@ -287,6 +368,7 @@ def ejecuta(ruta_json: Path) -> Dict[str, Any]:
         },
         "modo_azimut": modo,
         "resultados": resultados,
+        "barrido": _barrido(v, fotos, watts_lista, llf_total, modo),
         "recomendacion": resultados[0]["catalogo"] if resultados[0]["nom"]["cumple"] else None,
     }
     return salida

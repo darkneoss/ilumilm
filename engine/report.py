@@ -6,13 +6,16 @@ Uso:
 Escribe `reporte.html` junto al JSON. El archivo es autocontenido salvo por las
 tipografias de Google Fonts, y esta pensado para publicarse como Artifact.
 
-El reporte es interactivo en dos cosas:
+El reporte deja mover tres parametros sin volver a correr nada:
 
-* Selector de clasificacion de vialidad. La iluminancia no depende de la
-  clasificacion (solo los umbrales de la norma), asi que con UNA corrida del
-  motor se pueden mostrar los veredictos de las siete clasificaciones. Los
-  umbrales van embebidos ya resueltos para el ancho de calzada del estudio.
-* Interruptor de tema claro/oscuro.
+* Clasificacion de vialidad. No cambia la fisica, solo los umbrales de la
+  norma, asi que se resuelve en el navegador con los umbrales ya embebidos.
+* Interpostal y altura de montaje. Estas SI cambian la geometria, los angulos
+  y el area del tramo, o sea el calculo completo. Se resuelven con el barrido
+  que precalcula `engine.cli`: una malla por cada combinacion.
+
+De ahi que la pagina no recalcule fotometria en JavaScript. Reimplementar el
+motor ahi seria tener dos motores que mantener de acuerdo.
 """
 from __future__ import annotations
 
@@ -30,23 +33,18 @@ TITULO = "Estudio de alumbrado público"
 # vialidad viven en ese gradiente, asi que la escala dice algo del tema en vez
 # de ser un arcoiris generico.
 RAMPA = [
-    (0.00, (0x16, 0x23, 0x3A)),
-    (0.25, (0x2E, 0x4B, 0x7A)),
-    (0.50, (0x7A, 0x63, 0x62)),
-    (0.75, (0xB5, 0x76, 0x2A)),
-    (0.90, (0xE8, 0xB4, 0x5C)),
-    (1.00, (0xFB, 0xEB, 0xC8)),
+    [0.00, [0x16, 0x23, 0x3A]],
+    [0.25, [0x2E, 0x4B, 0x7A]],
+    [0.50, [0x7A, 0x63, 0x62]],
+    [0.75, [0xB5, 0x76, 0x2A]],
+    [0.90, [0xE8, 0xB4, 0x5C]],
+    [1.00, [0xFB, 0xEB, 0xC8]],
 ]
 
-
-def _color(t: float) -> str:
-    t = max(0.0, min(1.0, t))
-    for (t0, c0), (t1, c1) in zip(RAMPA, RAMPA[1:]):
-        if t <= t1:
-            f = (t - t0) / (t1 - t0) if t1 > t0 else 0.0
-            r, g, b = (round(a + (b_ - a) * f) for a, b_ in zip(c0, c1))
-            return "#{:02x}{:02x}{:02x}".format(r, g, b)
-    return "#fbebc8"
+# Geometria del mapa. La malla siempre es de 10 puntos a lo largo (la ventana
+# evaluada del metodo IES) por dos por carril, asi que el esqueleto del SVG se
+# emite una vez y el script solo cambia colores y numeros.
+MX, MY, CW, CH = 82, 30, 62, 46
 
 
 def _num(x: float, dec: int = 2) -> str:
@@ -55,118 +53,75 @@ def _num(x: float, dec: int = 2) -> str:
     return "{:,.{}f}".format(x, dec).replace(",", " ")
 
 
-def _isolux(r: Dict[str, Any]) -> str:
-    """Mapa de la malla: X a lo largo de la vialidad, Y a traves."""
-    malla = r["malla"]
-    xs: List[float] = malla["xs"]
-    ys: List[float] = malla["ys"]
-    e: List[List[float]] = malla["e"]
-    lo, hi = malla["minimo_lx"], malla["maximo_lx"]
-    rango = (hi - lo) or 1.0
-
-    mx, my = 82, 30           # margenes para las etiquetas de los ejes
-    cw, ch = 62, 46           # tamano de celda
-    w = mx + cw * len(xs) + 16
-    h = my + ch * len(ys) + 46
-
+def _isolux(idx: int, n_x: int, n_y: int) -> str:
+    """Esqueleto del mapa. Los colores y los valores los pone el script."""
+    w = MX + CW * n_x + 16
+    h = MY + CH * n_y + 46
     p: List[str] = [
-        '<svg viewBox="0 0 {} {}" class="isolux" role="img" '
-        'aria-label="Mapa de iluminancia en lux sobre la calzada">'.format(w, h)
+        '<svg viewBox="0 0 {} {}" class="isolux" data-i="{}" role="img" '
+        'aria-label="Mapa de iluminancia en lux sobre la calzada">'.format(w, h, idx)
     ]
-    for i, _x in enumerate(xs):
-        for j, _y in enumerate(ys):
-            v = e[i][j]
-            t = (v - lo) / rango
-            cx, cy = mx + i * cw, my + j * ch
-            p.append(
-                '<rect x="{}" y="{}" width="{}" height="{}" fill="{}"/>'.format(
-                    cx, cy, cw, ch, _color(t))
-            )
-            # texto claro sobre lo oscuro y al reves, para que siempre se lea
-            p.append(
-                '<text x="{}" y="{}" class="celda" fill="{}">{}</text>'.format(
-                    cx + cw / 2, cy + ch / 2 + 4,
-                    "#12161d" if t > 0.62 else "#eef2f8", _num(v, 1))
-            )
-    for j, y in enumerate(ys):
-        p.append(
-            '<text x="{}" y="{}" class="eje ejey">{} m</text>'.format(
-                mx - 10, my + j * ch + ch / 2 + 4, _num(y, 2))
-        )
-    for i in (0, len(xs) - 1):
-        p.append(
-            '<text x="{}" y="{}" class="eje">{} m</text>'.format(
-                mx + i * cw + cw / 2, my - 10, _num(xs[i], 2))
-        )
-    p.append(
-        '<text x="{}" y="{}" class="eje ejetit">a lo largo de la vialidad →</text>'.format(
-            mx, my + ch * len(ys) + 24)
-    )
-    p.append(
-        '<text x="12" y="{}" class="eje ejetit" transform="rotate(-90 12 {})">'
-        "← ancho de calzada</text>".format(
-            my + ch * len(ys) / 2, my + ch * len(ys) / 2)
-    )
+    for i in range(n_x):
+        for j in range(n_y):
+            cx, cy = MX + i * CW, MY + j * CH
+            p.append('<rect x="{}" y="{}" width="{}" height="{}"/>'.format(cx, cy, CW, CH))
+            p.append('<text x="{}" y="{}" class="celda"></text>'.format(
+                cx + CW / 2, cy + CH / 2 + 4))
+    for j in range(n_y):
+        p.append('<text x="{}" y="{}" class="eje ejey"></text>'.format(
+            MX - 10, MY + j * CH + CH / 2 + 4))
+    for i in (0, n_x - 1):
+        p.append('<text x="{}" y="{}" class="eje ejex"></text>'.format(
+            MX + i * CW + CW / 2, MY - 10))
+    p.append('<text x="{}" y="{}" class="eje ejetit">a lo largo de la vialidad →</text>'.format(
+        MX, MY + CH * n_y + 24))
+    p.append('<text x="12" y="{}" class="eje ejetit" transform="rotate(-90 12 {})">'
+             "← ancho de calzada</text>".format(MY + CH * n_y / 2, MY + CH * n_y / 2))
     p.append("</svg>")
     return "".join(p)
 
 
-def _leyenda(lo: float, hi: float) -> str:
+def _leyenda() -> str:
     paradas = "".join(
-        '<stop offset="{:.0%}" stop-color="{}"/>'.format(t, _color(t))
-        for t, _ in RAMPA
+        '<stop offset="{:.0%}" stop-color="rgb({},{},{})"/>'.format(t, *c)
+        for t, c in RAMPA
     )
     return (
         '<div class="leyenda">'
         '<svg viewBox="0 0 220 10" preserveAspectRatio="none" aria-hidden="true">'
         '<defs><linearGradient id="g">{}</linearGradient></defs>'
         '<rect width="220" height="10" fill="url(#g)"/></svg>'
-        '<div class="leyenda-t"><span>{} lx</span><span>{} lx</span></div>'
+        '<div class="leyenda-t"><span class="lo"></span><span class="hi"></span></div>'
         "</div>"
-    ).format(paradas, _num(lo, 1), _num(hi, 1))
+    ).format(paradas)
 
 
 def _fila(i: int, r: Dict[str, Any]) -> str:
-    """Fila de la tabla. Los veredictos los rellena el script al cargar."""
-    m = r["malla"]
+    """Fila de la tabla. Todos los numeros los rellena el script."""
     return (
         '<tr data-i="{i}">'
         '<td class="modelo"><span class="mnombre">{modelo}</span>'
         '<span class="mfab">{fab}</span><span class="rec" hidden>recomendado</span></td>'
         '<td class="n" data-label="Potencia">{w}</td>'
-        '<td class="n" data-label="Eprom">{eprom}</td>'
-        '<td class="n" data-label="Emin">{emin}</td>'
-        '<td class="n" data-label="Uniformidad">{unif}</td>'
-        '<td class="n" data-label="DPEA">{dpea}</td>'
+        '<td class="n c-eprom" data-label="Eprom"></td>'
+        '<td class="n c-emin" data-label="Emin"></td>'
+        '<td class="n c-unif" data-label="Uniformidad"></td>'
+        '<td class="n c-dpea" data-label="DPEA"></td>'
         '<td class="vcell" data-label="Veredicto"></td>'
         "</tr>"
-    ).format(
-        i=i,
-        modelo=escape(r["catalogo"]),
-        fab=escape(r["fabricante"] or ""),
-        w=_num(r["watts"], 1),
-        eprom=_num(m["promedio_lx"], 2),
-        emin=_num(m["minimo_lx"], 2),
-        unif=_num(m["uniformidad"], 2),
-        dpea=_num(r["dpea_w_m2"], 3),
-    )
+    ).format(i=i, modelo=escape(r["catalogo"]),
+             fab=escape(r["fabricante"] or ""), w=_num(r["watts"], 1))
 
 
-def _detalle(i: int, r: Dict[str, Any]) -> str:
-    m = r["malla"]
+def _detalle(i: int, r: Dict[str, Any], n_x: int, n_y: int) -> str:
     return (
         '<section class="detalle" data-i="{i}">'
         '<h3>{modelo} <span class="w">{w} W</span></h3>'
         '<div class="criterios"></div>'
         '<div class="mapa">{leyenda}{svg}</div>'
         "</section>"
-    ).format(
-        i=i,
-        modelo=escape(r["catalogo"]),
-        w=_num(r["watts"], 1),
-        svg=_isolux(r),
-        leyenda=_leyenda(m["minimo_lx"], m["maximo_lx"]),
-    )
+    ).format(i=i, modelo=escape(r["catalogo"]), w=_num(r["watts"], 1),
+             svg=_isolux(i, n_x, n_y), leyenda=_leyenda())
 
 
 CSS = """
@@ -208,8 +163,6 @@ p{margin:0}
   font-family:Archivo,sans-serif; font-size:12px; font-weight:600;
   letter-spacing:.14em; text-transform:uppercase; color:var(--slate);
 }
-/* Una sola medida de lectura para todo el texto corrido: dos anchos distintos
-   hacen que la columna angosta se lea como error en vez de como decision. */
 header .sub,.notas{max-width:var(--medida)}
 header .sub{color:var(--ink-2); margin-top:10px}
 .barra{display:flex; align-items:flex-start; justify-content:space-between; gap:20px}
@@ -222,14 +175,51 @@ header .sub{color:var(--ink-2); margin-top:10px}
 .tema:hover{color:var(--ink); border-color:var(--ink-3)}
 .tema:focus-visible{outline:2px solid var(--slate); outline-offset:2px}
 .tema svg{width:14px; height:14px; fill:currentColor}
-:root[data-theme="dark"] .tema .i-sol,.tema .i-sol{display:none}
-:root[data-theme="dark"] .tema .i-luna,.tema .i-luna{display:block}
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]) .tema .i-sol{display:none}
-  :root:not([data-theme="light"]) .tema .i-luna{display:block}
-}
+.tema .i-sol,.tema .i-luna{display:none}
+:root[data-theme="dark"] .tema .i-luna{display:block}
 :root[data-theme="light"] .tema .i-sol{display:block}
-:root[data-theme="light"] .tema .i-luna{display:none}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .tema .i-luna{display:block}}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]) .tema .i-sol{display:block}}
+
+/* Controles: lo que se puede mover, separado de lo que es dato fijo */
+.panel{
+  background:var(--surface); border:1px solid var(--line); border-radius:6px;
+  padding:20px 24px; display:flex; flex-direction:column; gap:18px;
+}
+.panel-tit{display:flex; align-items:baseline; justify-content:space-between; gap:16px; flex-wrap:wrap}
+.panel-tit h2{
+  font-size:12px; letter-spacing:.1em; text-transform:uppercase;
+  color:var(--ink-3); font-weight:600;
+}
+.reset{
+  background:none; border:none; cursor:pointer; padding:0; color:var(--slate);
+  font-family:Archivo,sans-serif; font-size:12px; font-weight:600; text-decoration:underline;
+}
+.reset:focus-visible{outline:2px solid var(--slate); outline-offset:2px}
+.controles{display:grid; gap:20px 32px; grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.ctrl{display:flex; flex-direction:column; gap:6px; min-width:0}
+.ctrl-cab{display:flex; align-items:baseline; justify-content:space-between; gap:12px; min-height:20px}
+.ctrl label{
+  font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--ink-3); font-family:Archivo,sans-serif;
+}
+.ctrl output{
+  font-family:"IBM Plex Mono",monospace; font-size:15px; font-variant-numeric:tabular-nums;
+  color:var(--ink);
+}
+.ctrl output.movido{color:var(--amber)}
+.ctrl select{
+  font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:15px;
+  background:var(--surface-2); color:var(--ink); border:1px solid var(--line);
+  border-radius:4px; padding:6px 8px; width:100%; cursor:pointer;
+}
+.ctrl select:focus-visible,.ctrl input:focus-visible{outline:2px solid var(--slate); outline-offset:1px}
+.ctrl input[type=range]{width:100%; accent-color:var(--slate); cursor:pointer; margin:6px 0 0}
+.marcas{display:flex; justify-content:space-between; font-family:"IBM Plex Mono",monospace; font-size:10.5px; color:var(--ink-3)}
+.avisomov{
+  font-size:13px; color:var(--ink-2); background:var(--surface-2);
+  border-left:3px solid var(--amber); border-radius:0 4px 4px 0; padding:9px 13px;
+}
 
 .ident{
   background:var(--surface); border:1px solid var(--line); border-radius:6px;
@@ -242,12 +232,6 @@ header .sub{color:var(--ink-2); margin-top:10px}
   color:var(--ink-3); font-family:Archivo,sans-serif;
 }
 .ident .v{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:15px; font-variant-numeric:tabular-nums}
-.ident select{
-  font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:15px;
-  background:var(--surface-2); color:var(--ink); border:1px solid var(--line);
-  border-radius:4px; padding:5px 8px; width:100%; cursor:pointer;
-}
-.ident select:focus-visible{outline:2px solid var(--slate); outline-offset:1px}
 
 .tablabox{overflow-x:auto; border:1px solid var(--line); border-radius:6px; background:var(--surface)}
 table{border-collapse:collapse; width:100%; min-width:720px}
@@ -277,11 +261,8 @@ tr.recomendado td:first-child{box-shadow:inset 3px 0 0 var(--amber)}
 }
 .veredicto.ok{color:var(--ok); background:var(--ok-bg)}
 .veredicto.bad{color:var(--bad); background:var(--bad-bg)}
-/* Que criterio fallo: un veredicto sin el obliga a rastrear la fila a mano. */
 .falla{display:block; margin-top:5px; font-size:11.5px; color:var(--bad); line-height:1.45}
 
-/* En pantalla angosta la tabla se apila en tarjetas. Antes aparecia una barra
-   de scroll horizontal que partia el diseno por la mitad. */
 @media (max-width:760px){
   .tablabox{overflow-x:visible; border:none; background:none; border-radius:0}
   table{min-width:0; display:block}
@@ -308,7 +289,6 @@ tr.recomendado td:first-child{box-shadow:inset 3px 0 0 var(--amber)}
 
 .detalle{display:flex; flex-direction:column; gap:16px; padding-top:8px; border-top:1px solid var(--line)}
 .detalle h3{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap}
-/* La potencia es dato de decision, no una acotacion: se lee o no sirve. */
 .detalle h3 .w{
   font-family:"IBM Plex Mono",monospace; font-size:14px; font-weight:500;
   color:var(--ink-2); background:var(--surface-2); border:1px solid var(--line);
@@ -345,75 +325,141 @@ footer{font-size:12.5px; color:var(--ink-3); border-top:1px solid var(--line); p
 @media (prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important}}
 """
 
-JS = """
+JS = r"""
 (function(){
   var raiz = document.documentElement;
 
-  // --- tema -----------------------------------------------------------
+  // --- tema -------------------------------------------------------------
   var btn = document.getElementById('tema');
   try{
     var g = localStorage.getItem('tema');
     if(g === 'dark' || g === 'light') raiz.setAttribute('data-theme', g);
   }catch(e){}
-  function oscuroAhora(){
+  function oscuro(){
     var t = raiz.getAttribute('data-theme');
-    if(t) return t === 'dark';
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    return t ? t === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
   }
   function rotulo(){
-    btn.setAttribute('aria-pressed', oscuroAhora() ? 'true' : 'false');
-    btn.querySelector('.txt').textContent = oscuroAhora() ? 'Modo claro' : 'Modo oscuro';
+    btn.setAttribute('aria-pressed', oscuro() ? 'true' : 'false');
+    btn.querySelector('.txt').textContent = oscuro() ? 'Modo claro' : 'Modo oscuro';
   }
   btn.addEventListener('click', function(){
-    var nuevo = oscuroAhora() ? 'light' : 'dark';
-    raiz.setAttribute('data-theme', nuevo);
-    try{ localStorage.setItem('tema', nuevo); }catch(e){}
+    var n = oscuro() ? 'light' : 'dark';
+    raiz.setAttribute('data-theme', n);
+    try{ localStorage.setItem('tema', n); }catch(e){}
     rotulo();
   });
   rotulo();
 
-  // --- veredictos por clasificacion ------------------------------------
-  // La iluminancia no depende de la clasificacion: solo cambian los umbrales,
-  // asi que se recalculan aqui sin volver a correr el motor.
-  var sel = document.getElementById('clasif');
+  // --- utilidades -------------------------------------------------------
+  function color(t){
+    t = Math.max(0, Math.min(1, t));
+    for(var k = 0; k < RAMPA.length - 1; k++){
+      var a = RAMPA[k], b = RAMPA[k + 1];
+      if(t <= b[0]){
+        var f = b[0] > a[0] ? (t - a[0]) / (b[0] - a[0]) : 0;
+        return 'rgb(' + a[1].map(function(c, m){
+          return Math.round(c + (b[1][m] - c) * f);
+        }).join(',') + ')';
+      }
+    }
+    return 'rgb(251,235,200)';
+  }
+  function fmt(x, d){
+    if(!isFinite(x)) return '∞';
+    return x.toFixed(d).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  }
+
+  // --- controles --------------------------------------------------------
+  var selC = document.getElementById('clasif');
+  var rgS  = document.getElementById('interpostal');
+  var rgH  = document.getElementById('altura');
+  var outS = document.getElementById('vInterpostal');
+  var outH = document.getElementById('vAltura');
+  var aviso = document.getElementById('avisomov');
+  var reset = document.getElementById('reset');
+
   var filas = [].slice.call(document.querySelectorAll('tbody tr'));
   var detalles = [].slice.call(document.querySelectorAll('.detalle'));
+  var svgs = [].slice.call(document.querySelectorAll('svg.isolux'));
+  var NY = B.ys.length;
 
   function chip(nombre, valor, unidad, comp, limite, ok, dec){
     return '<div class="criterio ' + (ok ? 'ok' : 'bad') + '">' +
       '<span class="criterio-nombre">' + nombre + '</span>' +
-      '<span class="criterio-valor">' + valor.toFixed(dec) +
+      '<span class="criterio-valor">' + fmt(valor, dec) +
       '<span class="u">' + unidad + '</span></span>' +
-      '<span class="criterio-limite">' + comp + ' ' + limite.toFixed(dec) + '</span></div>';
+      '<span class="criterio-limite">' + comp + ' ' + fmt(limite, dec) + '</span></div>';
   }
 
+  function pintaMapa(idx, malla, lo, hi){
+    var svg = svgs[idx];
+    var rango = (hi - lo) || 1;
+    var rects = svg.querySelectorAll('rect');
+    var celdas = svg.querySelectorAll('text.celda');
+    for(var n = 0; n < malla.length; n++){
+      var t = (malla[n] - lo) / rango;
+      rects[n].setAttribute('fill', color(t));
+      celdas[n].textContent = malla[n].toFixed(1);
+      celdas[n].setAttribute('fill', t > 0.62 ? '#12161d' : '#eef2f8');
+    }
+    var ejesY = svg.querySelectorAll('text.ejey');
+    for(var j = 0; j < NY; j++) ejesY[j].textContent = B.ys[j].toFixed(2) + ' m';
+    var xs = B.xs_por_interpostal[iS];
+    var ejesX = svg.querySelectorAll('text.ejex');
+    ejesX[0].textContent = xs[0].toFixed(2) + ' m';
+    ejesX[1].textContent = xs[xs.length - 1].toFixed(2) + ' m';
+    var ley = detalles[idx].querySelector('.leyenda-t');
+    ley.querySelector('.lo').textContent = fmt(lo, 1) + ' lx';
+    ley.querySelector('.hi').textContent = fmt(hi, 1) + ' lx';
+  }
+
+  var iS = B.i_interpostal_estudio, iH = B.i_altura_estudio;
+
   function pinta(){
-    var req = REQ[sel.value];
+    var S = B.interpostales[iS], H = B.alturas[iH];
+    var req = REQ[selC.value];
+    var area = B.ancho_sin_camellon * S;
     var mejor = -1, mejorW = Infinity, cumplen = 0;
 
+    outS.textContent = fmt(S, 2) + ' m';
+    outH.textContent = fmt(H, 2) + ' m';
+    outS.classList.toggle('movido', iS !== B.i_interpostal_estudio);
+    outH.classList.toggle('movido', iH !== B.i_altura_estudio);
+    var movido = (iS !== B.i_interpostal_estudio) || (iH !== B.i_altura_estudio);
+    aviso.hidden = !movido;
+    reset.hidden = !movido;
+
     LUM.forEach(function(l, i){
-      var cIlum = l.eprom >= req.eprom_min;
-      var cUnif = l.unif <= req.unif_max;
-      var cDpea = l.dpea <= req.dpea_max;
+      var st = B.stats[iS][iH][i];           // [eprom, emin, emax, uniformidad]
+      var dpea = B.watts_por_tramo[i] / area;
+      var cIlum = st[0] >= req.eprom_min;
+      var cUnif = st[3] <= req.unif_max;
+      var cDpea = dpea <= req.dpea_max;
       var todo = cIlum && cUnif && cDpea;
-      if(todo){
-        cumplen++;
-        if(l.w < mejorW){ mejorW = l.w; mejor = i; }
-      }
+      if(todo){ cumplen++; if(l.w < mejorW){ mejorW = l.w; mejor = i; } }
+
+      var f = filas[i];
+      f.querySelector('.c-eprom').textContent = fmt(st[0], 2);
+      f.querySelector('.c-emin').textContent  = fmt(st[1], 2);
+      f.querySelector('.c-unif').textContent  = fmt(st[3], 2);
+      f.querySelector('.c-dpea').textContent  = fmt(dpea, 3);
+
       var fallos = [];
       if(!cIlum) fallos.push('nivel de iluminación');
       if(!cUnif) fallos.push('uniformidad');
       if(!cDpea) fallos.push('DPEA');
-
-      var celda = filas[i].querySelector('.vcell');
-      celda.innerHTML = '<span class="veredicto ' + (todo ? 'ok' : 'bad') + '">' +
+      f.querySelector('.vcell').innerHTML =
+        '<span class="veredicto ' + (todo ? 'ok' : 'bad') + '">' +
         (todo ? 'CUMPLE' : 'NO CUMPLE') + '</span>' +
         (fallos.length ? '<span class="falla">falla ' + fallos.join(', ') + '</span>' : '');
 
       detalles[i].querySelector('.criterios').innerHTML =
-        chip('Nivel de iluminación (Eprom)', l.eprom, ' lx', '&ge; mínimo', req.eprom_min, cIlum, 2) +
-        chip('Uniformidad (Eprom/Emin)', l.unif, '', '&le; máximo', req.unif_max, cUnif, 2) +
-        chip('DPEA', l.dpea, ' W/m\\u00b2', '&le; máximo', req.dpea_max, cDpea, 3);
+        chip('Nivel de iluminación (Eprom)', st[0], ' lx', '&ge; mínimo', req.eprom_min, cIlum, 2) +
+        chip('Uniformidad (Eprom/Emin)', st[3], '', '&le; máximo', req.unif_max, cUnif, 2) +
+        chip('DPEA', dpea, ' W/m²', '&le; máximo', req.dpea_max, cDpea, 3);
+
+      pintaMapa(i, B.mallas[iS][iH][i], st[1], st[2]);
     });
 
     filas.forEach(function(f, i){
@@ -423,13 +469,19 @@ JS = """
 
     document.getElementById('resumen').innerHTML =
       'Evaluación de ' + LUM.length + ' luminario' + (LUM.length === 1 ? '' : 's') +
-      ' sobre la geometría descrita abajo. ' + cumplen + ' de ' + LUM.length +
-      ' cumplen los tres criterios de la norma.' +
+      ' con interpostal de ' + fmt(S, 2) + ' m y altura de montaje de ' + fmt(H, 2) +
+      ' m. ' + cumplen + ' de ' + LUM.length + ' cumplen los tres criterios de la norma.' +
       (mejor >= 0 ? ' Se recomienda el <strong>' + LUM[mejor].cat +
         '</strong> por ser el de menor potencia entre los que cumplen.' : '');
   }
 
-  sel.addEventListener('change', pinta);
+  rgS.addEventListener('input', function(){ iS = +rgS.value; pinta(); });
+  rgH.addEventListener('input', function(){ iH = +rgH.value; pinta(); });
+  selC.addEventListener('change', pinta);
+  reset.addEventListener('click', function(){
+    iS = B.i_interpostal_estudio; iH = B.i_altura_estudio;
+    rgS.value = iS; rgH.value = iH; pinta();
+  });
   pinta();
 })();
 """
@@ -440,13 +492,14 @@ def html(datos: Dict[str, Any]) -> str:
     n = datos["nom"]
     p = datos["perdidas"]
     res: List[Dict[str, Any]] = datos["resultados"]
+    b = datos["barrido"]
 
     pavimento = n["pavimento"]
     ancho = v["ancho_sin_camellon"]
     tabla = nom.TABLAS_POR_PAVIMENTO[pavimento]
 
     # Umbrales de las 7 clasificaciones, ya resueltos para este ancho de
-    # calzada. El ancho no cambia con el selector, asi que basta un numero.
+    # calzada. El ancho no cambia con ningun control, asi que basta un numero.
     req = {
         clave: {
             "eprom_min": r.iluminancia_minima_promedio_lx,
@@ -455,17 +508,7 @@ def html(datos: Dict[str, Any]) -> str:
         }
         for clave, r in tabla.items()
     }
-    lum = [
-        {
-            "cat": r["catalogo"],
-            "w": r["watts"],
-            "eprom": r["malla"]["promedio_lx"],
-            "emin": r["malla"]["minimo_lx"],
-            "unif": r["malla"]["uniformidad"],
-            "dpea": r["dpea_w_m2"],
-        }
-        for r in res
-    ]
+    lum = [{"cat": r["catalogo"], "w": r["watts"]} for r in res]
 
     sel_actual = n["clasificacion_vialidad"]
     opciones = "".join(
@@ -485,8 +528,6 @@ def html(datos: Dict[str, Any]) -> str:
         ("Carriles", "{} × {} m".format(v["num_carriles"], _num(v["ancho_carril"], 2))),
         ("Camellón", "{} m".format(_num(v["camellon"], 2))),
         ("Disposición", disp),
-        ("Altura de montaje", "{} m".format(_num(v["altura_montaje"], 2))),
-        ("Interpostal", "{} m".format(_num(v["interpostal"], 2))),
         ("Retranqueo", "{} m".format(_num(v["retranqueo"], 2))),
         ("Largo de brazo", "{} m".format(_num(v["largo_brazo"], 2))),
         ("Ancho para DPEA", "{} m".format(_num(ancho, 2))),
@@ -494,12 +535,14 @@ def html(datos: Dict[str, Any]) -> str:
             _num(p["lld"], 2), _num(p["ldd"], 2), _num(p["bf"], 2), _num(p["llf_total"], 3))),
         ("Criterio de azimut", "IESNA RP-8"),
     ]
-    ident_html = (
-        '<div><span class="k">Clasificación</span>'
-        '<select id="clasif" aria-label="Clasificación de vialidad">{}</select></div>'.format(opciones)
-        + "".join('<div><span class="k">{}</span><span class="v">{}</span></div>'.format(k, val)
-                  for k, val in ident)
+    ident_html = "".join(
+        '<div><span class="k">{}</span><span class="v">{}</span></div>'.format(k, val)
+        for k, val in ident
     )
+
+    ints, alts = b["interpostales"], b["alturas"]
+    n_x = len(b["xs_por_interpostal"][0])
+    n_y = len(b["ys"])
 
     return """<meta charset="utf-8">
 <title>{titulo}</title>
@@ -522,6 +565,33 @@ def html(datos: Dict[str, Any]) -> str:
     </div>
     <p class="sub" id="resumen"></p>
   </header>
+
+  <section class="panel">
+    <div class="panel-tit">
+      <h2>Parámetros que puedes mover</h2>
+      <button class="reset" id="reset" type="button" hidden>Volver a los valores del estudio</button>
+    </div>
+    <div class="controles">
+      <div class="ctrl">
+        <div class="ctrl-cab"><label for="clasif">Clasificación de vialidad</label></div>
+        <select id="clasif">{opciones}</select>
+      </div>
+      <div class="ctrl">
+        <div class="ctrl-cab"><label for="interpostal">Distancia interpostal</label>
+          <output id="vInterpostal"></output></div>
+        <input type="range" id="interpostal" min="0" max="{maxS}" step="1" value="{iS}">
+        <div class="marcas"><span>{s0} m</span><span>{s1} m</span></div>
+      </div>
+      <div class="ctrl">
+        <div class="ctrl-cab"><label for="altura">Altura de montaje</label>
+          <output id="vAltura"></output></div>
+        <input type="range" id="altura" min="0" max="{maxH}" step="1" value="{iH}">
+        <div class="marcas"><span>{h0} m</span><span>{h1} m</span></div>
+      </div>
+    </div>
+    <p class="avisomov" id="avisomov" hidden>Estás viendo una configuración distinta a la
+    del estudio, que es de {sEst} m de interpostal y {hEst} m de altura de montaje.</p>
+  </section>
 
   <section class="ident">{ident}</section>
 
@@ -558,10 +628,14 @@ def html(datos: Dict[str, Any]) -> str:
     estudio sirve para elegir la sustitución; no sustituye la verificación.</p>
     <p>El DPEA se calcula como la carga conectada por tramo interpostal entre el
     área de ese tramo, con el ancho de calzada <strong>sin aceras ni
-    camellones</strong>, como pide la sección 6.1 de la norma.</p>
-    <p>Cambiar la clasificación de vialidad solo mueve los umbrales de la norma;
-    la iluminancia calculada es la misma, porque depende de la geometría y de la
-    fotometría, no de cómo se clasifique la calle.</p>
+    camellones</strong>, como pide la sección 6.1 de la norma. Por eso separar
+    los postes baja el DPEA y al mismo tiempo baja la iluminancia: los dos
+    criterios se mueven en sentidos opuestos.</p>
+    <p>Cada combinación de interpostal y altura está calculada de antemano con
+    el mismo motor que produjo el estudio; no son valores interpolados. Cambiar
+    la clasificación, en cambio, solo mueve los umbrales, porque la iluminancia
+    depende de la geometría y de la fotometría, no de cómo se clasifique la
+    calle.</p>
   </section>
 
   <footer>Generado por el motor de cálculo de ilumilm. Los watts de cada
@@ -570,8 +644,10 @@ def html(datos: Dict[str, Any]) -> str:
   directamente el DPEA.</footer>
 </div>
 <script>
+const RAMPA = {rampa};
 const REQ = {req};
 const LUM = {lum};
+const B = {barrido};
 {js}
 </script>
 """.format(
@@ -579,10 +655,20 @@ const LUM = {lum};
         js=JS,
         titulo=TITULO,
         ident=ident_html,
+        opciones=opciones,
+        maxS=len(ints) - 1,
+        maxH=len(alts) - 1,
+        iS=b["i_interpostal_estudio"],
+        iH=b["i_altura_estudio"],
+        s0=_num(ints[0], 1), s1=_num(ints[-1], 1),
+        h0=_num(alts[0], 1), h1=_num(alts[-1], 1),
+        sEst=_num(v["interpostal"], 2), hEst=_num(v["altura_montaje"], 2),
         filas="".join(_fila(i, r) for i, r in enumerate(res)),
-        detalles="".join(_detalle(i, r) for i, r in enumerate(res)),
+        detalles="".join(_detalle(i, r, n_x, n_y) for i, r in enumerate(res)),
+        rampa=json.dumps(RAMPA),
         req=json.dumps(req, ensure_ascii=False),
         lum=json.dumps(lum, ensure_ascii=False),
+        barrido=json.dumps(b, ensure_ascii=False, separators=(",", ":")),
     )
 
 
@@ -597,6 +683,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         print("No existe el archivo: {}".format(ruta), file=sys.stderr)
         return 1
     datos = json.loads(ruta.read_text(encoding="utf-8"))
+    if "barrido" not in datos:
+        print("El resultados.json no trae 'barrido'; vuelve a correr "
+              "'python -m engine.cli' para regenerarlo.", file=sys.stderr)
+        return 1
     destino = ruta.parent / "reporte.html"
     destino.write_text(html(datos), encoding="utf-8")
     print("Reporte escrito en {}".format(destino))

@@ -26,6 +26,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Sequence
 
 from . import nom
+from .geometry import Vialidad, paso_malla, posiciones_luminarios
 
 TITULO = "Estudio de alumbrado público"
 
@@ -53,32 +54,121 @@ def _num(x: float, dec: int = 2) -> str:
     return "{:,.{}f}".format(x, dec).replace(",", " ")
 
 
-def _isolux(idx: int, n_x: int, n_y: int) -> str:
-    """Esqueleto del mapa. Los colores y los valores los pone el script."""
+def _isolux(idx: int, v: Vialidad, xs: List[float], ys: List[float]) -> str:
+    """Esqueleto del mapa. Los colores y los valores los pone el script.
+
+    Los marcadores de poste si son estaticos: la ventana dibujada es siempre un
+    tramo interpostal completo, asi que en coordenadas del SVG los luminarios
+    caen en el mismo sitio sin importar el interpostal o la altura elegidos.
+    """
+    n_x, n_y = len(xs), len(ys)
+    marcas, dy = _marcadores(v, xs, ys)
     w = MX + CW * n_x + 16
-    h = MY + CH * n_y + 46
+    h = MY + dy + CH * n_y + 46
     p: List[str] = [
-        '<svg viewBox="0 0 {} {}" class="isolux" data-i="{}" role="img" '
-        'aria-label="Mapa de iluminancia en lux sobre la calzada">'.format(w, h, idx)
+        '<svg viewBox="0 0 {} {:.0f}" class="isolux" data-i="{}" role="img" '
+        'aria-label="Mapa de iluminancia en lux sobre la calzada, con la '
+        'posicion de los luminarios">'.format(w, h, idx)
     ]
     for i in range(n_x):
         for j in range(n_y):
-            cx, cy = MX + i * CW, MY + j * CH
-            p.append('<rect x="{}" y="{}" width="{}" height="{}"/>'.format(cx, cy, CW, CH))
-            p.append('<text x="{}" y="{}" class="celda"></text>'.format(
+            cx, cy = MX + i * CW, MY + dy + j * CH
+            p.append('<rect class="cbg" x="{}" y="{:.0f}" width="{}" height="{}"/>'.format(
+                cx, cy, CW, CH))
+            p.append('<text x="{}" y="{:.0f}" class="celda"></text>'.format(
                 cx + CW / 2, cy + CH / 2 + 4))
     for j in range(n_y):
-        p.append('<text x="{}" y="{}" class="eje ejey"></text>'.format(
-            MX - 10, MY + j * CH + CH / 2 + 4))
+        p.append('<text x="{}" y="{:.0f}" class="eje ejey"></text>'.format(
+            MX - 10, MY + dy + j * CH + CH / 2 + 4))
     for i in (0, n_x - 1):
-        p.append('<text x="{}" y="{}" class="eje ejex"></text>'.format(
-            MX + i * CW + CW / 2, MY - 10))
-    p.append('<text x="{}" y="{}" class="eje ejetit">a lo largo de la vialidad →</text>'.format(
-        MX, MY + CH * n_y + 24))
-    p.append('<text x="12" y="{}" class="eje ejetit" transform="rotate(-90 12 {})">'
-             "← ancho de calzada</text>".format(MY + CH * n_y / 2, MY + CH * n_y / 2))
+        p.append('<text x="{}" y="{:.0f}" class="eje ejex"></text>'.format(
+            MX + i * CW + CW / 2, MY + dy - 10))
+    p.append(marcas)
+    p.append('<text x="{}" y="{:.0f}" class="eje ejetit">a lo largo de la vialidad &#8594;</text>'.format(
+        MX, MY + dy + CH * n_y + 24))
+    p.append('<text x="12" y="{:.0f}" class="eje ejetit" transform="rotate(-90 12 {:.0f})">'
+             "&#8592; ancho de calzada</text>".format(
+                 MY + dy + CH * n_y / 2, MY + dy + CH * n_y / 2))
     p.append("</svg>")
     return "".join(p)
+
+
+def _escala_y(ys: List[float]):
+    """Mapea una Y de la vialidad a la Y del SVG.
+
+    Interpolacion por tramos y no lineal simple, porque con camellon las filas
+    de la malla no estan igualmente espaciadas: entre las dos centrales hay un
+    salto que en el dibujo debe caer donde de verdad esta el camellon.
+    """
+    centros = [MY + j * CH + CH / 2 for j in range(len(ys))]
+
+    def f(ry: float) -> float:
+        if len(ys) == 1:
+            return centros[0]
+        if ry <= ys[0]:
+            paso = (centros[1] - centros[0]) / (ys[1] - ys[0])
+            return centros[0] + (ry - ys[0]) * paso
+        if ry >= ys[-1]:
+            paso = (centros[-1] - centros[-2]) / (ys[-1] - ys[-2])
+            return centros[-1] + (ry - ys[-1]) * paso
+        for j in range(len(ys) - 1):
+            if ys[j] <= ry <= ys[j + 1]:
+                t = (ry - ys[j]) / (ys[j + 1] - ys[j])
+                return centros[j] + t * (centros[j + 1] - centros[j])
+        return centros[-1]
+    return f
+
+
+def _marcadores(v: Vialidad, xs: List[float], ys: List[float]) -> tuple:
+    """Poste, brazo y luminario de cada poste que cae sobre el tramo dibujado.
+
+    Devuelve (svg, desplazamiento_vertical). El desplazamiento es el margen
+    extra que hay que dejar arriba cuando el poste queda fuera de la calzada,
+    que es lo normal: con retranqueo el poste esta en la acera, en Y negativa.
+    """
+    paso = paso_malla(v.interpostal)
+    x_ini, x_fin = xs[0] - paso / 2, xs[-1] + paso / 2
+    ancho_svg = CW * len(xs)
+    ey = _escala_y(ys)
+
+    def ex(rx: float) -> float:
+        return MX + (rx - x_ini) / (x_fin - x_ini) * ancho_svg
+
+    # base del poste segun de que lado del arroyo esta el luminario
+    y_borde_lejano = v.num_carriles * v.ancho_carril + v.camellon
+    centro = y_borde_lejano / 2.0
+    piezas = []
+    ys_dibujadas = []
+    for (rx, ry, orient) in posiciones_luminarios(v):
+        if rx < x_ini - 1e-6 or rx > x_fin + 1e-6:
+            continue
+        if v.disposicion == "Median mounted":
+            y_base = centro
+        elif orient == 1:
+            y_base = -v.retranqueo
+        else:
+            y_base = y_borde_lejano + v.retranqueo
+        piezas.append((ex(rx), ey(y_base), ey(ry)))
+        ys_dibujadas += [ey(y_base), ey(ry)]
+
+    if not piezas:
+        return "", 0.0
+    # 16 px de aire arriba del elemento mas alto
+    dy = max(0.0, 16.0 - min(ys_dibujadas))
+
+    p = ['<g class="postes">']
+    for (x, yb, yl) in piezas:
+        yb, yl = yb + dy, yl + dy
+        p.append('<line class="p-eje" x1="{:.1f}" y1="{:.1f}" x2="{:.1f}" y2="{:.1f}"/>'.format(
+            x, min(yb, yl), x, MY + dy + CH * len(ys)))
+        p.append('<line class="p-brazo" x1="{:.1f}" y1="{:.1f}" x2="{:.1f}" y2="{:.1f}"/>'.format(
+            x, yb, x, yl))
+        p.append('<rect class="p-base" x="{:.1f}" y="{:.1f}" width="7" height="7"/>'.format(
+            x - 3.5, yb - 3.5))
+        p.append('<circle class="p-halo" cx="{:.1f}" cy="{:.1f}" r="7"/>'.format(x, yl))
+        p.append('<circle class="p-lum" cx="{:.1f}" cy="{:.1f}" r="4.5"><title>Luminario</title></circle>'.format(x, yl))
+    p.append("</g>")
+    return "".join(p), dy
 
 
 def _leyenda() -> str:
@@ -92,6 +182,11 @@ def _leyenda() -> str:
         '<defs><linearGradient id="g">{}</linearGradient></defs>'
         '<rect width="220" height="10" fill="url(#g)"/></svg>'
         '<div class="leyenda-t"><span class="lo"></span><span class="hi"></span></div>'
+        '<div class="leyenda-lum"><svg viewBox="0 0 18 18" aria-hidden="true">'
+        '<line class="p-brazo" x1="9" y1="14" x2="9" y2="6"/>'
+        '<rect class="p-base" x="5.5" y="11" width="7" height="7"/>'
+        '<circle class="p-lum" cx="9" cy="6" r="4"/></svg>'
+        '<span>poste, brazo y luminario</span></div>'
         "</div>"
     ).format(paradas)
 
@@ -113,7 +208,7 @@ def _fila(i: int, r: Dict[str, Any]) -> str:
              fab=escape(r["fabricante"] or ""), w=_num(r["watts"], 1))
 
 
-def _detalle(i: int, r: Dict[str, Any], n_x: int, n_y: int) -> str:
+def _detalle(i: int, r: Dict[str, Any], v: Vialidad, xs: List[float], ys: List[float]) -> str:
     return (
         '<section class="detalle" data-i="{i}">'
         '<h3>{modelo} <span class="w">{w} W</span></h3>'
@@ -121,7 +216,7 @@ def _detalle(i: int, r: Dict[str, Any], n_x: int, n_y: int) -> str:
         '<div class="mapa">{leyenda}{svg}</div>'
         "</section>"
     ).format(i=i, modelo=escape(r["catalogo"]), w=_num(r["watts"], 1),
-             svg=_isolux(i, n_x, n_y), leyenda=_leyenda())
+             svg=_isolux(i, v, xs, ys), leyenda=_leyenda())
 
 
 CSS = """
@@ -315,9 +410,17 @@ tr.recomendado td:first-child{box-shadow:inset 3px 0 0 var(--amber)}
 .isolux .eje{font-family:"IBM Plex Mono",monospace; font-size:11px; fill:var(--ink-3); text-anchor:middle}
 .isolux .ejey{text-anchor:end}
 .isolux .ejetit{font-family:Archivo,sans-serif; font-size:11px; text-anchor:start; letter-spacing:.04em}
-.leyenda{max-width:220px}
-.leyenda svg{width:220px; height:10px; border-radius:2px; display:block}
-.leyenda-t{display:flex; justify-content:space-between; font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--ink-3); margin-top:3px}
+/* Poste y luminario: el mapa sin ellos no dice donde esta la fuente de luz. */
+.p-eje{stroke:var(--amber-txt); stroke-width:1; stroke-dasharray:3 4; opacity:.55}
+.p-brazo{stroke:var(--amber-txt); stroke-width:2.5; stroke-linecap:round}
+.p-base{fill:var(--amber-txt)}
+.p-halo{fill:none; stroke:var(--surface); stroke-width:3}
+.p-lum{fill:var(--amber-txt); stroke:var(--surface); stroke-width:1.5}
+.leyenda-lum{display:flex; align-items:center; gap:7px; margin-top:8px; font-size:11.5px; color:var(--ink-3); white-space:nowrap}
+.leyenda-lum svg{width:16px; height:16px; flex:none}
+.leyenda{max-width:none}
+.leyenda > svg{width:220px; height:10px; border-radius:2px; display:block}
+.leyenda-t{display:flex; justify-content:space-between; width:220px; font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--ink-3); margin-top:3px}
 
 .notas{display:flex; flex-direction:column; gap:14px; font-size:14px; color:var(--ink-2)}
 .notas h2{color:var(--ink); margin-bottom:2px}
@@ -396,7 +499,7 @@ JS = r"""
   function pintaMapa(idx, malla, lo, hi){
     var svg = svgs[idx];
     var rango = (hi - lo) || 1;
-    var rects = svg.querySelectorAll('rect');
+    var rects = svg.querySelectorAll('rect.cbg');
     var celdas = svg.querySelectorAll('text.celda');
     for(var n = 0; n < malla.length; n++){
       var t = (malla[n] - lo) / rango;
@@ -542,8 +645,12 @@ def html(datos: Dict[str, Any]) -> str:
     )
 
     ints, alts = b["interpostales"], b["alturas"]
-    n_x = len(b["xs_por_interpostal"][0])
-    n_y = len(b["ys"])
+    xs0 = b["xs_por_interpostal"][b["i_interpostal_estudio"]]
+    vial = Vialidad(
+        num_carriles=v["num_carriles"], ancho_carril=v["ancho_carril"],
+        camellon=v["camellon"], disposicion=v["disposicion"],
+        altura_montaje=v["altura_montaje"], interpostal=v["interpostal"],
+        retranqueo=v["retranqueo"], largo_brazo=v["largo_brazo"])
 
     return """<meta charset="utf-8">
 <title>{titulo}</title>
@@ -665,7 +772,7 @@ const B = {barrido};
         h0=_num(alts[0], 1), h1=_num(alts[-1], 1),
         sEst=_num(v["interpostal"], 2), hEst=_num(v["altura_montaje"], 2),
         filas="".join(_fila(i, r) for i, r in enumerate(res)),
-        detalles="".join(_detalle(i, r, n_x, n_y) for i, r in enumerate(res)),
+        detalles="".join(_detalle(i, r, vial, xs0, b["ys"]) for i, r in enumerate(res)),
         rampa=json.dumps(RAMPA),
         req=json.dumps(req, ensure_ascii=False),
         lum=json.dumps(lum, ensure_ascii=False),

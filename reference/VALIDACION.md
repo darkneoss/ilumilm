@@ -60,6 +60,17 @@ residuo de los otros once está siempre en los `.ies` grandes (V1070, V3160:
 unilateral, tresbolillo, central doble y bilateral opuesta. Ya no queda ninguna
 apoyada solo en el argumento de que comparte ruta de código con otra.
 
+**Sin validar: dos luminarios por poste** (`luminarios_por_poste` y
+`angulo_separacion`, el `selectedFixturesPerPole` y el ángulo de separación del
+Excel). Están portados del mismo VBA 1.8.1 que todo lo demás, pero ninguna de
+las 24 corridas los usa, así que no hay nada contra qué contrastarlos. Lo que sí
+está medido es que **no estorban**: con el montaje por omisión —un luminario por
+poste, sin separación— los 24 casos siguen cuadrando al 0.008 %, y esa es
+exactamente la prueba que hace `tests/test_regresion_sead.py` después de haber
+reescrito `posiciones_luminarios` con la estructura de la 1.8.1. Los invariantes
+geométricos del camino nuevo se prueban aparte, en `tests/test_montaje.py`, con
+casos donde la respuesta se deduce sin correr nada.
+
 Inclinaciones validadas: **0°, 5° y 15°**. Las dos distintas de cero, en
 bilateral opuesta y sobre la misma geometría que su control a 0° (estudios 08 y
 09), que es lo que permite atribuirle la diferencia a la inclinación y no a la

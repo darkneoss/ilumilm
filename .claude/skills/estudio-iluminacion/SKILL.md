@@ -34,6 +34,11 @@ siempre los valores por omisión, que cubren el caso típico.
   usuario no la menciona** — 0 es lo normal y lo que usa la herramienta de
   referencia. Pero si la menciona, decláralas: no es un dato de dibujo, entra al
   cálculo, y 15° mueven el Eprom un 6 % y el Emín un 14 %.
+- luminarios por poste, **1 por omisión**, y ángulo de separación entre brazos.
+  Igual que la inclinación: **no preguntes si el usuario no lo menciona.** Si lo
+  menciona, avísale que ese camino no tiene corrida de referencia (`README.md`),
+  y que duplicar los luminarios por poste duplica la carga del tramo y por tanto
+  el DPEA — que es criterio de cumplimiento, no un dato informativo.
 
 ## Cómo correrlo
 

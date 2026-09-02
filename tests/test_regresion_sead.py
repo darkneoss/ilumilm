@@ -1,19 +1,22 @@
 """
-Regresion contra los 9 estudios reales del SEAD Street Lighting Tool
+Regresion contra los 12 estudios reales del SEAD Street Lighting Tool
 (assets/estudios/*.xlsx), extraidos previamente a reference/casos_sead.json
 por tools/extraer_casos_sead.py.
 
-Un caso = un estudio x un luminario evaluado en el (18 en total). Se corre el
+Un caso = un estudio x un luminario evaluado en el (24 en total). Se corre el
 motor en MODO_CORRECTO (el que coincide con el Excel, ver engine/calc.py) y
 se compara contra el promedio/minimo/maximo/uniformidad que dejo cacheado el
 Excel.
 
-Tolerancias (relativas, en %):
-    promedio    0.5 %
-    maximo      0.5 %
-    minimo      1.5 %   (mas sensible a la interpolacion de la fotometria)
-    uniformidad se deriva de promedio/minimo: no se le pone tolerancia propia
-    explicita en el enunciado, pero se reporta para diagnostico.
+Tolerancias: 0.05 % en promedio, maximo y minimo (ver la nota de las
+constantes mas abajo; el enunciado original las tenia en 0.5/1.5 %). La
+uniformidad se deriva de promedio/minimo, asi que no lleva tolerancia propia,
+pero se reporta para diagnostico.
+
+Esta suite es tambien la que prueba que el montaje por omision --un luminario
+por poste, sin cabeceo ni separacion-- deja el calculo exactamente donde
+estaba, que es la unica red que tiene el camino de dos luminarios por poste
+(ver tests/test_montaje.py).
 
 Si un caso no pasa, NO se relaja la tolerancia: se deja fallando.
 """
@@ -26,7 +29,7 @@ import pytest
 
 from engine import calc
 from engine import ies
-from engine.geometry import Vialidad
+from engine.geometry import Montaje, Vialidad
 
 RAIZ = Path(__file__).resolve().parent.parent
 JSON_CASOS = RAIZ / "reference" / "casos_sead.json"
@@ -122,13 +125,16 @@ def test_regresion_sead(nombre_estudio, caso):
         largo_brazo=geo["largo_brazo"],
     )
 
-    # La inclinacion es propiedad del luminario, no de la vialidad (igual que
-    # en el Excel). No viene en el .xlsx de salida; la trae casos_sead.json,
-    # ver la nota de INCLINACIONES en tools/extraer_casos_sead.py.
+    # El montaje es propiedad del luminario, no de la vialidad (igual que en el
+    # Excel). La inclinacion no viene en el .xlsx de salida; la trae
+    # casos_sead.json, ver la nota de INCLINACIONES en
+    # tools/extraer_casos_sead.py. Las 24 corridas son de un luminario por
+    # poste, que es el valor por omision.
     inclinacion = caso["luminario"].get("inclinacion", 0.0)
+    montaje = Montaje(inclinacion=inclinacion)
 
     malla = calc.calcula(v, foto, geo["llf"], modo=calc.MODO_CORRECTO,
-                         inclinacion=inclinacion)
+                         montaje=montaje)
 
     err_prom = _error_pct(esperado["promedio"], malla.promedio)
     err_min = _error_pct(esperado["minimo"], malla.minimo)

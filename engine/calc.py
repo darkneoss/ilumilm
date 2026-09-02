@@ -49,6 +49,7 @@ from dataclasses import dataclass
 from typing import List, Sequence, Tuple
 
 from .geometry import (
+    Montaje,
     Vialidad,
     posiciones_luminarios,
     valores_x,
@@ -111,7 +112,8 @@ class Malla:
 
 
 def _angulos(xl: float, yl: float, orient: int, xp: float, yp: float,
-             h: float, modo: str, inclinacion: float = 0.0) -> Tuple[float, float, float]:
+             h: float, modo: str, inclinacion: float = 0.0,
+             giro_z: float = 0.0) -> Tuple[float, float, float]:
     """Devuelve (gamma_geometrico, gamma_tabla, C_tabla) en grados.
 
     Son DOS gammas y no uno porque el luminario puede estar inclinado, y
@@ -136,15 +138,19 @@ def _angulos(xl: float, yl: float, orient: int, xp: float, yp: float,
     gamma_geo = math.degrees(math.atan(dist / h)) if dist else 0.0
 
     # Rotacion al sistema del luminario (`angleGammaWithTilt` /
-    # `anglePhiWithTilt`, AngleCalculations.bas). La 1.8.1 solo gira sobre X
-    # -- el cabeceo del luminario sobre el brazo -- asi que los otros dos ejes
-    # de la matriz general quedan en cero y se simplifica a esto.
-    if inclinacion:
-        t = math.radians(inclinacion)
-        cos_t, sin_t = math.cos(t), math.sin(t)
-        x_p = dx
-        y_p = dy * cos_t - h * sin_t
-        h_p = dy * sin_t + h * cos_t
+    # `anglePhiWithTilt`, AngleCalculations.bas). De los tres ejes de la matriz
+    # general, la 1.8.1 usa dos: X es el cabeceo sobre el brazo y Z el giro del
+    # brazo sobre la vertical, que solo aparece con dos luminarios en un poste.
+    # El eje Y --torcer el luminario sobre su propio brazo-- lo deja en cero
+    # ("tiltDegreesY is not applicable currently"), asi que la matriz se
+    # simplifica a esto.
+    if inclinacion or giro_z:
+        tx, tz = math.radians(inclinacion), math.radians(giro_z)
+        cos_x, sin_x = math.cos(tx), math.sin(tx)
+        cos_z, sin_z = math.cos(tz), math.sin(tz)
+        x_p = dx * cos_z + dy * sin_z
+        y_p = (-dx * sin_z + dy * cos_z) * cos_x - h * sin_x
+        h_p = (-dx * sin_z + dy * cos_z) * sin_x + h * cos_x
     else:
         x_p, y_p, h_p = dx, dy, h
 
@@ -167,21 +173,24 @@ def _angulos(xl: float, yl: float, orient: int, xp: float, yp: float,
 
 
 def calcula(v: Vialidad, foto: Fotometria, llf: float,
-            modo: str = MODO_CORRECTO, inclinacion: float = 0.0) -> Malla:
+            modo: str = MODO_CORRECTO, montaje: Montaje = None) -> Malla:
     """Iluminancia en cada punto de la ventana evaluada, en lux.
 
     `llf` es el factor total de perdidas (LLD * LDD * factor de balastro).
 
-    `inclinacion` es el cabeceo del luminario sobre el brazo, en grados;
-    positiva apunta hacia la calzada. Es propiedad del luminario y no de la
-    vialidad, igual que en el Excel (`FixtureData!selectedTilt`), asi que dos
-    luminarios de una misma corrida pueden traer inclinaciones distintas.
+    `montaje` describe como va colgado el luminario: cabeceo sobre el brazo,
+    cuantos luminarios lleva el poste y con que angulo entre brazos. Es
+    propiedad del luminario y no de la vialidad, igual que en el Excel (hoja
+    `FixtureData`), asi que dos luminarios de una misma corrida pueden traer
+    montajes distintos. Por omision, el montaje corriente.
     """
+    if montaje is None:
+        montaje = Montaje()
     xs_todos = valores_x(v.interpostal)
     ys = valores_y(v.num_carriles, v.ancho_carril, v.camellon)
     i0, i1 = ventana_evaluacion(xs_todos, v.interpostal)
     xs = xs_todos[i0:i1 + 1]
-    luminarios = posiciones_luminarios(v)
+    luminarios = posiciones_luminarios(v, montaje)
     h = v.altura_montaje
 
     e: List[List[float]] = []
@@ -191,9 +200,10 @@ def calcula(v: Vialidad, foto: Fotometria, llf: float,
             total = 0.0
             # Todos los luminarios del tramo contribuyen; el metodo IES del
             # SEAD no aplica ningun corte por distancia.
-            for xl, yl, orient in luminarios:
+            for lum in luminarios:
                 gamma_geo, gamma, c = _angulos(
-                    xl, yl, orient, xp, yp, h, modo, inclinacion)
+                    lum.x, lum.y, lum.orientacion, xp, yp, h, modo,
+                    montaje.inclinacion, lum.giro_z)
                 intensidad = foto.intensidad(gamma, c)
                 cos_g = math.cos(math.radians(gamma_geo))
                 total += intensidad * cos_g ** 3 * llf / (h * h)
@@ -203,13 +213,13 @@ def calcula(v: Vialidad, foto: Fotometria, llf: float,
 
 
 def comparar_modos(v: Vialidad, foto: Fotometria, llf: float,
-                   inclinacion: float = 0.0) -> dict:
+                   montaje: Montaje = None) -> dict:
     """Compara el azimut de calculo contra el plegado al cuadrante.
 
     Herramienta de diagnostico. El reporte ya no la usa.
     """
-    a = calcula(v, foto, llf, MODO_CUADRANTE, inclinacion)
-    b = calcula(v, foto, llf, MODO_CORRECTO, inclinacion)
+    a = calcula(v, foto, llf, MODO_CUADRANTE, montaje)
+    b = calcula(v, foto, llf, MODO_CORRECTO, montaje)
     def dif(x, y):
         return 100.0 * (y - x) / x if x else float("nan")
     return {

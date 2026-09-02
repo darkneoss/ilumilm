@@ -20,8 +20,9 @@ Solo se implementa el metodo IES (el CIE queda fuera del alcance, ver el plan).
 """
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
-from typing import List, Sequence, Tuple
+from typing import List, NamedTuple, Sequence, Tuple
 
 # Nombres de disposicion tal como los usa el VBA, con su equivalente en la
 # NOM-013 (Apendice C, figuras C.1 a C.4).
@@ -101,6 +102,62 @@ class Vialidad:
         return -self.retranqueo + self.largo_brazo
 
 
+@dataclass(frozen=True)
+class Montaje:
+    """Como va montado UN luminario en su poste.
+
+    Es propiedad del luminario y no de la vialidad, igual que en el Excel
+    (hoja `FixtureData`), asi que dos luminarios comparados en un mismo estudio
+    pueden traer montajes distintos. Los tres valores por omision reproducen el
+    montaje corriente --un luminario por poste, perpendicular y sin cabeceo--
+    que es el de las 24 corridas de referencia.
+    """
+
+    inclinacion: float = 0.0            # cabeceo sobre el brazo, grados, + hacia la calzada
+    luminarios_por_poste: int = 1       # `selectedFixturesPerPole`
+    angulo_separacion: float = 0.0      # entre los brazos de un mismo poste, grados
+
+    def __post_init__(self) -> None:
+        if not -90.0 < self.inclinacion < 90.0:
+            raise ValueError("inclinacion debe estar entre -90 y 90 grados")
+        if self.luminarios_por_poste < 1:
+            raise ValueError("luminarios_por_poste debe ser >= 1")
+        if self.luminarios_por_poste > 2:
+            # El VBA reparte los brazos con `ArmLength * sin(sep/2)`, que
+            # supone dos brazos simetricos respecto al poste. Su propio
+            # comentario lo admite: "Would also work for 3 fixtures if other
+            # logic used adjustment correctly". Con tres o mas los pondria
+            # todos en dos posiciones, asi que no se acepta en vez de dar un
+            # numero que parece bueno.
+            raise ValueError(
+                "luminarios_por_poste > 2 no esta soportado: el reparto de "
+                "brazos del original supone dos brazos simetricos"
+            )
+        if not -180.0 < self.angulo_separacion < 180.0:
+            raise ValueError("angulo_separacion debe estar entre -180 y 180 grados")
+        if self.angulo_separacion and self.luminarios_por_poste == 1:
+            raise ValueError(
+                "el angulo_separacion solo tiene sentido con mas de un "
+                "luminario por poste"
+            )
+
+    @property
+    def neutro(self) -> bool:
+        """True si este montaje es el corriente, el de los casos validados."""
+        return (not self.inclinacion and self.luminarios_por_poste == 1
+                and not self.angulo_separacion)
+
+
+class Luminario(NamedTuple):
+    """Un luminario ya colocado sobre el tramo."""
+
+    x: float
+    y: float
+    orientacion: int      # +1 mira hacia +Y, -1 hacia -Y
+    giro_z: float = 0.0   # giro del brazo sobre la vertical, grados
+    x_poste: float = 0.0  # X del poste del que cuelga (== x con un solo brazo)
+
+
 # ---------------------------------------------------------------------------
 # Malla de medicion  (MakeMeasurementGrid.bas)
 # ---------------------------------------------------------------------------
@@ -155,14 +212,27 @@ def valores_y(num_carriles: int, ancho_carril: float, camellon: float) -> List[f
 # Posiciones de luminarios  (FixturePositions.bas)
 # ---------------------------------------------------------------------------
 
-def posiciones_luminarios(v: Vialidad) -> List[Tuple[float, float, int]]:
-    """Coordenadas (x, y, orientacion) de cada luminario sobre el tramo.
+def posiciones_luminarios(v: Vialidad,
+                          montaje: "Montaje" = None) -> List[Luminario]:
+    """Posicion, orientacion y giro de cada luminario sobre el tramo.
+
+    Puerto del triple bucle de `FixturePosition` (FixturePositions.bas de la
+    1.8.1): fase de poste x lado de la calle x luminario del poste. La 1.7.6
+    tenia una rama por disposicion; la 1.8.1 las unifico en tres parametros
+    --cuantos lados, cuanto se desplaza en X el poste del lado B, y si el poste
+    es central-- y aqui se sigue esa estructura, que es la que admite mas de un
+    luminario por poste sin duplicar nada.
 
     `orientacion` vale +1 si el lado de la calle del luminario apunta hacia +Y
-    y -1 si apunta hacia -Y. Importa porque un luminario vial es asimetrico:
-    en unilateral todos miran igual, pero en bilateral, tresbolillo y central
-    doble la mitad de ellos mira al lado contrario, y usar la misma orientacion
-    para todos ilumina la calzada con la distribucion de la acera.
+    y -1 si apunta hacia -Y (el `facesBackwards` del VBA). Importa porque un
+    luminario vial es asimetrico: en unilateral todos miran igual, pero en
+    bilateral, tresbolillo y central doble la mitad mira al lado contrario, y
+    usar la misma orientacion para todos ilumina la calzada con la distribucion
+    de la acera.
+
+    `giro_z` es el giro del brazo sobre el eje vertical, en grados. Solo es
+    distinto de cero cuando hay dos luminarios en un poste, y entonces cada uno
+    gira hacia un lado.
 
     RAREZA SEAD: la malla cubre 4 interpostales y la ventana de evaluacion es
     [S, 2S). Es decir, la ventana tiene UN luminario aguas arriba y TRES aguas
@@ -170,58 +240,72 @@ def posiciones_luminarios(v: Vialidad) -> List[Tuple[float, float, int]]:
     contribuciones lejanas son despreciables, pero la asimetria es real y esta
     en el original.
 
-    CONTEO: `CInt(gridlength / polespacing) + 1` luminarios por lado, o sea 5
-    en unilateral (x = 0, S, 2S, 3S, 4S) y 10 repartidos en las demas
-    disposiciones. La v1.7.6 generaba uno mas por lado (hasta x = 5S) por un
-    `ReDim FPArrayX(n + 1)` con base 0; la 1.8.1 lo corrigio. La diferencia es
-    de ~0.001 % en la mayoria de los casos, pero con el conteo nuevo la mitad
-    de los estudios de referencia cuadran al 0.0000 % exacto y el peor error de
-    la suite baja de 0.14 % a 0.007 %, asi que el conteo bueno es este.
+    CONTEO: `CInt(gridlength / polespacing) + 1` postes por lado, o sea 5 en
+    unilateral (x = 0, S, 2S, 3S, 4S) y 10 repartidos en las demas
+    disposiciones, todo por los luminarios que lleve cada poste. La v1.7.6
+    generaba uno mas por lado (hasta x = 5S) por un `ReDim FPArrayX(n + 1)` con
+    base 0; la 1.8.1 lo corrigio. La diferencia es de ~0.001 % en la mayoria de
+    los casos, pero con el conteo nuevo la mitad de los estudios de referencia
+    cuadran al 0.0000 % exacto y el peor error de la suite baja de 0.14 % a
+    0.007 %, asi que el conteo bueno es este.
     """
+    if montaje is None:
+        montaje = Montaje()
+
     s = v.interpostal
-    largo = longitud_malla(s)
-    y_cerca = v.y_poste
-    y_lejos = v.num_carriles * v.ancho_carril + v.camellon + v.retranqueo - v.largo_brazo
+    n_por_lado = int(round(longitud_malla(s) / s)) + 1
+    por_poste = montaje.luminarios_por_poste
 
-    n_por_lado = int(round(largo / s)) + 1
-
+    # Los tres parametros con que la 1.8.1 describe cualquier disposicion.
     if v.disposicion == "Single-side":
-        return [(i * s, y_cerca, 1) for i in range(n_por_lado)]
+        lados, dx_lado_b, central = 1, 0.0, 0
+    elif v.disposicion == "Opposite":
+        # Postes enfrentados: los dos lados comparten la misma X.
+        lados, dx_lado_b, central = 2, 0.0, 0
+    elif v.disposicion == "Staggered":
+        # Alternados: el lado B va corrido medio interpostal.
+        lados, dx_lado_b, central = 2, s / 2.0, 0
+    elif v.disposicion == "Median mounted":
+        lados, dx_lado_b, central = 2, 0.0, 1
+    else:  # pragma: no cover - normaliza_disposicion ya filtro
+        raise ValueError(v.disposicion)
 
-    n = 2 * n_por_lado - 2
-    puntos: List[Tuple[float, float, int]] = []
-    centro = (v.num_carriles * v.ancho_carril + v.camellon) / 2.0
-    for i in range(n + 2):
-        par = i % 2 == 0
-        if v.disposicion == "Opposite":
-            # Postes enfrentados: el par y el impar comparten la misma X.
-            x = i * s / 2 if par else (i - 1) * s / 2
-            y = y_cerca if par else y_lejos
-            orientacion = 1 if par else -1
-        elif v.disposicion == "Staggered":
-            # Alternados: cada luminario a medio interpostal del anterior.
-            x = i * s / 2
-            y = y_cerca if par else y_lejos
-            orientacion = 1 if par else -1
-        elif v.disposicion == "Median mounted":
-            x = i * s / 2 if par else (i - 1) * s / 2
-            # El original suma/resta el retranqueo aqui, cosa que no tiene
-            # sentido fisico en un poste central; la version 1.7.1 lo evita
-            # validando que el retranqueo sea cero. Se replica igual.
-            # El retranqueo NO aplica a un poste central: los dos brazos salen
-            # del eje del camellon. El VBA lo suma y lo resta igual, con un
-            # comentario propio admitiendo que sobra ("polesetback should
-            # probably be removed from here"), y la version que genero los
-            # estudios de referencia valida que el retranqueo sea cero. Sin
-            # esta correccion el error contra esos estudios es de 8 % en Emin;
-            # con ella baja a 0.02 %.
-            y = centro + v.largo_brazo if par else centro - v.largo_brazo
-            # el brazo par queda del lado lejano y alumbra hacia +Y; el impar,
-            # del lado cercano, alumbra hacia -Y
-            orientacion = 1 if par else -1
-        else:  # pragma: no cover - normaliza_disposicion ya filtro
-            raise ValueError(v.disposicion)
-        puntos.append((x, y, orientacion))
+    n_total = n_por_lado * por_poste * (1 if lados == 1 else 2)
+
+    # Con dos brazos en un poste, el angulo de separacion los abre en X y les
+    # acorta el alcance en Y: el brazo deja de ser perpendicular a la vialidad.
+    # Con un solo luminario el angulo es 0, dx_brazo = 0 y dy_brazo = brazo, o
+    # sea el caso de siempre.
+    sep = math.radians(montaje.angulo_separacion)
+    dx_brazo = v.largo_brazo * math.sin(sep / 2.0)
+    dy_brazo = v.largo_brazo * math.cos(sep / 2.0)
+
+    ancho = v.num_carriles * v.ancho_carril + v.camellon
+
+    puntos: List[Luminario] = []
+    fase = 0
+    while len(puntos) < n_total:
+        for lado in range(1, lados + 1):
+            signo = (-1) ** lado          # -1 en el lado A, +1 en el lado B
+            x_poste = fase * s + (lado - 1) * dx_lado_b
+            for k in range(1, por_poste + 1):
+                x = x_poste + ((-1) ** k) * dx_brazo
+                # El retranqueo NO aplica a un poste central: los dos brazos
+                # salen del eje del camellon, de ahi el factor (1 - central).
+                # El VBA lo suma y lo resta igual, con un comentario propio
+                # admitiendo que sobra ("polesetback should probably be removed
+                # from here"). Sin esta correccion el error contra los estudios
+                # de referencia es de 8 % en Emin; con ella baja a 0.02 %.
+                y = (-signo * (1 - 2 * central) * dy_brazo
+                     + signo * (1 - central) * v.retranqueo
+                     + (lado - 1) * ancho * (1 - central)
+                     + central * ancho / 2.0)
+                # En el lado A solo mira "hacia atras" si el poste es central;
+                # en el lado B, siempre que no lo sea.
+                atras = (lado == 1) if central else (lado == 2)
+                giro = -montaje.angulo_separacion if k == 1 else montaje.angulo_separacion
+                puntos.append(Luminario(x, y, -1 if atras else 1, giro, x_poste))
+        fase += 1
     return puntos
 
 

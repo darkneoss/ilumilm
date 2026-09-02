@@ -31,6 +31,12 @@ luminario, con 0° por omisión, y mueve el resultado de verdad: 15° cambian el
 Eprom un 6 % y el Emín un 14 %. Si el luminario se monta cabeceado sobre el
 brazo, hay que declararlo.
 
+**Sin validar: dos luminarios por poste.** El motor los soporta —portados del
+mismo VBA— pero ninguna corrida de referencia los usa, así que no hay medición
+que lo respalde. Con el valor por omisión de un luminario por poste el camino
+es demostrablemente neutro: las 24 corridas siguen cuadrando. Si vas a entregar
+un estudio con dos luminarios por poste, conviene contrastar una corrida antes.
+
 ---
 
 ## Uso con la skill (recomendado)
@@ -116,6 +122,8 @@ Crea `estudios/<nombre>/entrada.json`:
 | `luminarios[].archivo` | Ruta a un `.ies` o nombre de uno indexado en `catalogo/`. |
 | `luminarios[].watts` | Opcional. **Sobrescribe** los watts del archivo. Úsalo cuando el `.ies` no los declara o evalúas otro driver. |
 | `luminarios[].inclinacion` | Opcional, **0° por omisión**. Cabeceo del luminario sobre el brazo, en grados, positivo hacia la calzada. Es propiedad del luminario, no de la vialidad. No es cosmético: entra al cálculo. |
+| `luminarios[].luminarios_por_poste` | Opcional, **1 por omisión**. Con 2, cada poste lleva dos brazos; duplica también la carga del tramo, así que cambia el DPEA. Más de 2 se rechaza. |
+| `luminarios[].angulo_separacion` | Opcional, **0° por omisión**. Ángulo entre los dos brazos de un mismo poste. Solo válido con 2 luminarios por poste. |
 | `modo_azimut` | Opcional. `correcto` (por omisión, IESNA RP-8). `cuadrante` existe solo para diagnóstico. |
 
 Las clasificaciones se resuelven de forma tolerante: `"tipo a"`, `"residencial

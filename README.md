@@ -9,7 +9,7 @@ dependencias externas** — solo biblioteca estándar.
 
 ## Estado de validación
 
-Contrastado contra 18 corridas reales de la herramienta que reemplaza, diez de
+Contrastado contra 22 corridas reales de la herramienta que reemplaza, doce de
 ellas con coincidencia exacta:
 
 | Métrica | Error máximo |
@@ -22,11 +22,9 @@ ellas con coincidencia exacta:
 El detalle está en [`reference/VALIDACION.md`](reference/VALIDACION.md) y la
 suite de regresión en `tests/`.
 
-**Disposiciones validadas: unilateral, central doble y bilateral opuesta.**
-Tresbolillo no aparece en ninguna corrida de referencia disponible. Comparte la
-ruta de código con las otras tres, que sí están validadas, pero eso es un
-argumento de construcción, no una medición: si vas a entregar un estudio en
-tresbolillo, conviene contrastar una corrida antes.
+**Las cuatro disposiciones de la NOM-013 están validadas**: unilateral,
+tresbolillo, central doble y bilateral opuesta. Ninguna se apoya ya en el
+argumento de que comparte ruta de código con otra.
 
 **Inclinación del luminario validada a 0°, 5° y 15°.** Es un parámetro por
 luminario, con 0° por omisión, y mueve el resultado de verdad: 15° cambian el

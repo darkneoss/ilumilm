@@ -5,9 +5,9 @@ description: Use when the user wants a street/roadway lighting study, photometri
 
 # Estudio de iluminación vial (NOM-013-ENER-2013)
 
-Motor propio de cálculo fotométrico, validado contra 14 corridas reales de la
-herramienta Excel que sustituye: error máximo 0.005 % en Eprom y 0.145 % en Emin
-(ver `reference/VALIDACION.md`).
+Motor propio de cálculo fotométrico, validado contra 22 corridas reales de la
+herramienta Excel que sustituye: error máximo 0.004 % en Eprom y 0.006 % en Emin,
+con las cuatro disposiciones de la NOM medidas (ver `reference/VALIDACION.md`).
 
 ## Qué necesitas del usuario
 

@@ -1,6 +1,6 @@
 # Validación del motor contra estudios reales
 
-Contraste de `engine/` contra 18 corridas reales de la herramienta Excel de
+Contraste de `engine/` contra 22 corridas reales de la herramienta Excel de
 referencia, extraídas por `tools/extraer_casos_sead.py` y congeladas en
 `reference/casos_sead.json`. La suite vive en `tests/test_regresion_sead.py`.
 
@@ -34,6 +34,10 @@ precargado en el Excel cuyo archivo .ies no tenemos.
 | estudio-08 | V2100UN2M50 | 4x3.54 cam 0.0 h10 S45.00 unilateral | 0° | 9.820 | 9.820 | +0.000% | 1.506 | 1.506 | +0.000% | 20.761 | 20.761 | +0.000% |
 | estudio-09 | V1070UN2M50 | 4x3.54 cam 0.0 h10 S45.00 bilateral opuesta | 5° | 15.591 | 15.592 | +0.001% | 9.194 | 9.193 | -0.001% | 27.812 | 27.813 | +0.002% |
 | estudio-09 | V2100UN2M50 | 4x3.54 cam 0.0 h10 S45.00 bilateral opuesta | 15° | 18.462 | 18.462 | +0.000% | 10.020 | 10.020 | +0.000% | 30.193 | 30.193 | +0.000% |
+| estudio-10 | V1070UN2M50 | 3x3.50 cam 0.0 h7 S40.00 tresbolillo | 0° | 26.902 | 26.901 | -0.001% | 14.733 | 14.733 | -0.005% | 47.695 | 47.695 | +0.000% |
+| estudio-10 | V2100UN2M50 | 3x3.50 cam 0.0 h7 S40.00 tresbolillo | 0° | 32.009 | 32.009 | +0.000% | 9.523 | 9.523 | +0.000% | 61.149 | 61.149 | +0.000% |
+| estudio-11 | V1070UN2M50 | 3x3.50 cam 0.0 h7 S40.00 central doble | 0° | 19.944 | 19.944 | -0.002% | 8.198 | 8.197 | -0.002% | 46.983 | 46.987 | +0.008% |
+| estudio-11 | V2100UN2M50 | 3x3.50 cam 0.0 h7 S40.00 central doble | 0° | 22.764 | 22.764 | +0.000% | 7.509 | 7.509 | +0.000% | 47.763 | 47.763 | +0.000% |
 
 ## Error máximo observado
 
@@ -44,22 +48,32 @@ precargado en el Excel cuyo archivo .ies no tenemos.
 | Maximo | 0.008 % |
 | Uniformidad | 0.006 % |
 
-Diez de los dieciocho casos coinciden con la referencia a cero exacto. El
-residuo de los otros ocho está siempre en los `.ies` grandes (V1070, V3160:
+Doce de los veintidós casos coinciden con la referencia a cero exacto. El
+residuo de los otros diez está siempre en los `.ies` grandes (V1070, V3160:
 ~250 KB, malla angular fina) y es de interpolación, no de geometría.
 
 ## Cobertura
 
-Disposiciones presentes en los estudios y por tanto validadas:
-**unilateral**, **central doble**, **bilateral opuesta**.
+**Las cuatro disposiciones de la NOM-013 están validadas contra medición:**
+unilateral, tresbolillo, central doble y bilateral opuesta. Ya no queda ninguna
+apoyada solo en el argumento de que comparte ruta de código con otra.
 
-**Sin validar: tresbolillo.** No aparece en ninguno de los estudios
-disponibles. Comparte la ruta de código con las otras tres, que sí quedaron
-validadas, pero eso es un argumento de construcción, no una medición.
+Inclinaciones validadas: **0°, 5° y 15°**. Las dos distintas de cero, en
+bilateral opuesta y sobre la misma geometría que su control a 0° (estudios 08 y
+09), que es lo que permite atribuirle la diferencia a la inclinación y no a la
+geometría.
 
-Inclinaciones validadas: **0°, 5° y 15°**, las tres sobre la misma geometría de
-cuatro carriles (estudios 08 y 09), y las dos distintas de cero en bilateral
-opuesta.
+El estudio-11 añade dos condiciones que ningún otro cubría, ambas del caso
+central doble:
+
+* **camellón de 0.0 m con montaje central**, o sea los dos brazos saliendo del
+  eje de la calzada sin camellón físico. El único caso central doble anterior
+  (estudio-03) tenía 4 m.
+* **retranqueo de 0.2 m que el motor ignora a propósito.** En un poste central
+  no tiene sentido físico —los dos brazos salen del mismo eje— y el motor lo
+  descarta; el VBA lo suma y lo resta igual, con un comentario propio admitiendo
+  que sobra. Que la corrida cuadre al 0.008 % con retranqueo distinto de cero
+  confirma la decisión por segunda vez y con otra geometría.
 
 ## Cuatro correcciones que salieron de esta validación
 

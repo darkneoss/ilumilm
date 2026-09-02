@@ -1,6 +1,8 @@
 # Especificación del algoritmo de Iluminancia (método IES) — SEAD Street Lighting Tool v1.7.6
 
-Fuente: VBA extraído en `reference/sead_vba/`. Todas las citas son `archivo.bas:línea`.
+Fuente: VBA extraído en `reference/sead_vba_1.7.6/`. Todas las citas son `archivo.bas:línea`.
+
+> **Esta especificación describe la 1.7.6, que NO es la versión de referencia.** Los estudios de `assets/estudios/` los generó la 1.8.1, cuyo VBA está en `reference/sead_vba_1.8.1/` (ver su README para las diferencias). El documento se conserva porque el algoritmo es el mismo salvo el tilt y el conteo de luminarios, y porque sus citas de línea son las que usa el port.
 Alcance: SOLO método IES, SOLO iluminancia (se ignora luminancia, CIE, financiero, gráficas, formularios, traducción).
 
 ---
@@ -327,7 +329,14 @@ uniformidad = "" if minimo==0 else minimo/promedio     # inferido por analogía,
 
 ## 9. Ambigüedades y rarezas (no resolver "limpio" sin decidirlo conscientemente)
 
-- **A1 — Tilt inconsistente en `Illum`.** `larray` se calcula con los ángulos "ForITable" (con tilt), pero `Illum` recibe el `gammaArray` SIN tilt para el `cos(gamma)^3` (`IlluminanceAndLuminance.bas:148,149,153,168`). Con tilt=0 (como está hardcodeado, `:99-101`) esto no importa numéricamente, pero es una inconsistencia estructural: si algún día se activa tilt, el resultado sería incorrecto (mezclaría I(phi',gamma') con cos(gamma) sin tilt).
+- **A1 — Tilt inconsistente en `Illum`. RESUELTO: no es un bug, es correcto.**
+  La 1.8.1 mantiene exactamente esta estructura con el tilt ya activo, y reproduce los
+  estudios de referencia con inclinación de 5° y 15° al 0.002 %. El doble cálculo es
+  intencional: el γ **inclinado** decide *cuánta* luz emite el luminario en esa dirección
+  (es una consulta a la fotometría, que está medida respecto al eje del luminario), y el γ
+  **geométrico** aplica la ley del cosseno sobre el pavimento (que no sabe nada de cómo
+  está orientada la lámpara). Son dos preguntas distintas y cada una quiere su ángulo.
+  Descripción original, que asumía que era un defecto latente: `larray` se calcula con los ángulos "ForITable" (con tilt), pero `Illum` recibe el `gammaArray` SIN tilt para el `cos(gamma)^3` (`IlluminanceAndLuminance.bas:148,149,153,168`). Con tilt=0 (como está hardcodeado, `:99-101`) esto no importa numéricamente, pero es una inconsistencia estructural: si algún día se activa tilt, el resultado sería incorrecto (mezclaría I(phi',gamma') con cos(gamma) sin tilt).
 - **A2 — Sin filtro de distancia en IES.** La rama IES suma la contribución de TODOS los postes de `fixtureX/fixtureY` sin excluir los que están lejos de la ventana de cálculo (a diferencia de la rama CIE que sí anula `LLF=0` para postes a más de 5H, `:377-381`). Para Single-side con 6 postes espaciados `polespacing` cubriendo `4*polespacing`, todos los postes previos/posteriores contribuyen matemáticamente (probablemente de forma insignificante por el término `1/FixtureHeight^2 * cos^3`, pero sin corte explícito).
 - **A3 — Rama `If calculationmethod="CIE"` en `Xvalues(0)` es código muerto/no-op** (`MakeMeasurementGrid.bas:34-38`): ambas ramas asignan lo mismo. No afecta el resultado, pero sugiere que el autor original modificó esta lógica y quedó vestigial — posible señal de que hubo una versión con comportamiento diferente por método.
 - **A4 — Mediana nunca insertada en Y si `NumberOfLanes` es impar** (`MakeMeasurementGrid.bas:44-50`). Si el caso de uso incluye número impar de carriles con mediana, la coordenada Y de la rejilla del lado lejano quedaría desplazada (le faltaría sumar `MedianLength`), afectando todos los cálculos de ese lado. Confirmar con el usuario si este caso aplica al alcance del proyecto.

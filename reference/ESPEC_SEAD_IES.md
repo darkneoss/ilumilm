@@ -1,6 +1,6 @@
 # Especificación: cómo `ReadISO.bas` interpreta archivos IES (SEAD Street Lighting Tool v1.7.6)
 
-Fuente única: `reference/sead_vba/ReadISO.bas`, subrutina `ReadISOfile` (líneas 229-604). Todas las citas de línea refieren a ese archivo.
+Fuente única: `reference/sead_vba_1.7.6/ReadISO.bas`, subrutina `ReadISOfile` (líneas 229-604). Todas las citas de línea refieren a ese archivo.
 
 ## 1. Parseo de la cabecera
 

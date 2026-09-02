@@ -127,23 +127,23 @@ def _detalle(i: int, r: Dict[str, Any], n_x: int, n_y: int) -> str:
 CSS = """
 :root{
   --ground:#f7f8fa; --surface:#ffffff; --surface-2:#eef1f6;
-  --ink:#14181f; --ink-2:#4a5361; --ink-3:#79828f;
-  --line:#dde1e8; --slate:#1f3a5f; --amber:#d08a1e;
+  --ink:#14181f; --ink-2:#4a5361; --ink-3:#565e6c;
+  --line:#dde1e8; --slate:#1f3a5f; --amber:#d08a1e; --amber-txt:#875608;
   --ok:#1f7a4d; --ok-bg:#e7f3ec; --bad:#b3261e; --bad-bg:#fbeae8;
   --medida:62ch;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     --ground:#0f1319; --surface:#171c24; --surface-2:#1f2630;
-    --ink:#e8ebf0; --ink-2:#99a3b2; --ink-3:#6d7889;
-    --line:#2a323e; --slate:#7fa8dc; --amber:#e8a93f;
+    --ink:#e8ebf0; --ink-2:#99a3b2; --ink-3:#98a2b2;
+    --line:#2a323e; --slate:#7fa8dc; --amber:#e8a93f; --amber-txt:#e8a93f;
     --ok:#4fbf87; --ok-bg:#14301f; --bad:#e2685c; --bad-bg:#361a18;
   }
 }
 :root[data-theme="dark"]{
   --ground:#0f1319; --surface:#171c24; --surface-2:#1f2630;
-  --ink:#e8ebf0; --ink-2:#99a3b2; --ink-3:#6d7889;
-  --line:#2a323e; --slate:#7fa8dc; --amber:#e8a93f;
+  --ink:#e8ebf0; --ink-2:#99a3b2; --ink-3:#98a2b2;
+  --line:#2a323e; --slate:#7fa8dc; --amber:#e8a93f; --amber-txt:#e8a93f;
   --ok:#4fbf87; --ok-bg:#14301f; --bad:#e2685c; --bad-bg:#361a18;
 }
 *{box-sizing:border-box}
@@ -176,10 +176,11 @@ header .sub{color:var(--ink-2); margin-top:10px}
 .tema:focus-visible{outline:2px solid var(--slate); outline-offset:2px}
 .tema svg{width:14px; height:14px; fill:currentColor}
 .tema .i-sol,.tema .i-luna{display:none}
-:root[data-theme="dark"] .tema .i-luna{display:block}
-:root[data-theme="light"] .tema .i-sol{display:block}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .tema .i-luna{display:block}}
-@media (prefers-color-scheme: light){:root:not([data-theme="dark"]) .tema .i-sol{display:block}}
+/* Se muestra el icono de la accion, no el del estado: en oscuro, un sol. */
+:root[data-theme="dark"] .tema .i-sol{display:block}
+:root[data-theme="light"] .tema .i-luna{display:block}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .tema .i-sol{display:block}}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]) .tema .i-luna{display:block}}
 
 /* Controles: lo que se puede mover, separado de lo que es dato fijo */
 .panel{
@@ -207,7 +208,7 @@ header .sub{color:var(--ink-2); margin-top:10px}
   font-family:"IBM Plex Mono",monospace; font-size:15px; font-variant-numeric:tabular-nums;
   color:var(--ink);
 }
-.ctrl output.movido{color:var(--amber)}
+.ctrl output.movido{color:var(--amber-txt)}
 .ctrl select{
   font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:15px;
   background:var(--surface-2); color:var(--ink); border:1px solid var(--line);
@@ -234,7 +235,7 @@ header .sub{color:var(--ink-2); margin-top:10px}
 .ident .v{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:15px; font-variant-numeric:tabular-nums}
 
 .tablabox{overflow-x:auto; border:1px solid var(--line); border-radius:6px; background:var(--surface)}
-table{border-collapse:collapse; width:100%; min-width:720px}
+table{border-collapse:collapse; width:100%; min-width:720px; color:var(--ink)}
 th,td{padding:13px 14px; text-align:left; border-bottom:1px solid var(--line)}
 thead th{
   font-family:Archivo,sans-serif; font-size:11px; font-weight:600;
@@ -252,7 +253,7 @@ tr.recomendado td:first-child{box-shadow:inset 3px 0 0 var(--amber)}
 .rec{
   display:inline-block; margin-top:5px; font-family:Archivo,sans-serif;
   font-size:10px; font-weight:600; letter-spacing:.08em; text-transform:uppercase;
-  color:var(--amber); border:1px solid var(--amber); border-radius:3px; padding:1px 6px;
+  color:var(--amber-txt); border:1px solid var(--amber-txt); border-radius:3px; padding:1px 6px;
 }
 .veredicto{
   font-family:Archivo,sans-serif; font-size:11px; font-weight:650;

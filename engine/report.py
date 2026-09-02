@@ -26,7 +26,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Sequence
 
 from . import nom
-from .geometry import Montaje, Vialidad, paso_malla, posiciones_luminarios
+from .geometry import Vialidad, paso_malla, posiciones_luminarios
 
 TITULO = "Estudio de alumbrado público"
 
@@ -54,8 +54,7 @@ def _num(x: float, dec: int = 2) -> str:
     return "{:,.{}f}".format(x, dec).replace(",", " ")
 
 
-def _isolux(idx: int, v: Vialidad, xs: List[float], ys: List[float],
-            montaje: Montaje) -> str:
+def _isolux(idx: int, v: Vialidad, xs: List[float], ys: List[float]) -> str:
     """Esqueleto del mapa. Los colores y los valores los pone el script.
 
     Los marcadores de poste si son estaticos: la ventana dibujada es siempre un
@@ -63,7 +62,7 @@ def _isolux(idx: int, v: Vialidad, xs: List[float], ys: List[float],
     caen en el mismo sitio sin importar el interpostal o la altura elegidos.
     """
     n_x, n_y = len(xs), len(ys)
-    marcas, dy = _marcadores(v, xs, ys, montaje)
+    marcas, dy = _marcadores(v, xs, ys)
     w = MX + CW * n_x + 16
     h = MY + dy + CH * n_y + 46
     p: List[str] = [
@@ -120,18 +119,12 @@ def _escala_y(ys: List[float]):
     return f
 
 
-def _marcadores(v: Vialidad, xs: List[float], ys: List[float],
-                montaje: Montaje) -> tuple:
+def _marcadores(v: Vialidad, xs: List[float], ys: List[float]) -> tuple:
     """Poste, brazo y luminario de cada poste que cae sobre el tramo dibujado.
 
     Devuelve (svg, desplazamiento_vertical). El desplazamiento es el margen
     extra que hay que dejar arriba cuando el poste queda fuera de la calzada,
     que es lo normal: con retranqueo el poste esta en la acera, en Y negativa.
-
-    Con dos luminarios en un poste el brazo ya no es perpendicular a la
-    vialidad, asi que la base del poste no cae bajo el luminario y hay que
-    dibujar el brazo en diagonal. Un dibujo que los pusiera alineados
-    esconderia justamente lo que el angulo de separacion hace.
     """
     paso = paso_malla(v.interpostal)
     x_ini, x_fin = xs[0] - paso / 2, xs[-1] + paso / 2
@@ -146,12 +139,8 @@ def _marcadores(v: Vialidad, xs: List[float], ys: List[float],
     centro = y_borde_lejano / 2.0
     piezas = []
     ys_dibujadas = []
-    for lum in posiciones_luminarios(v, montaje):
-        rx, ry, orient, rx_poste = lum.x, lum.y, lum.orientacion, lum.x_poste
-        # El recorte va por la X del POSTE y no del luminario: con dos brazos
-        # abiertos, uno de cada pareja cae unos centimetros fuera del borde del
-        # tramo dibujado, y recortarlo por separado partiria el poste en dos.
-        if rx_poste < x_ini - 1e-6 or rx_poste > x_fin + 1e-6:
+    for rx, ry, orient in posiciones_luminarios(v):
+        if rx < x_ini - 1e-6 or rx > x_fin + 1e-6:
             continue
         if v.disposicion == "Median mounted":
             y_base = centro
@@ -159,7 +148,7 @@ def _marcadores(v: Vialidad, xs: List[float], ys: List[float],
             y_base = -v.retranqueo
         else:
             y_base = y_borde_lejano + v.retranqueo
-        piezas.append((ex(rx_poste), ex(rx), ey(y_base), ey(ry)))
+        piezas.append((ex(rx), ey(y_base), ey(ry)))
         ys_dibujadas += [ey(y_base), ey(ry)]
 
     if not piezas:
@@ -168,14 +157,14 @@ def _marcadores(v: Vialidad, xs: List[float], ys: List[float],
     dy = max(0.0, 16.0 - min(ys_dibujadas))
 
     p = ['<g class="postes">']
-    for (xp, x, yb, yl) in piezas:
+    for (x, yb, yl) in piezas:
         yb, yl = yb + dy, yl + dy
         p.append('<line class="p-eje" x1="{:.1f}" y1="{:.1f}" x2="{:.1f}" y2="{:.1f}"/>'.format(
-            xp, min(yb, yl), xp, MY + dy + CH * len(ys)))
+            x, min(yb, yl), x, MY + dy + CH * len(ys)))
         p.append('<line class="p-brazo" x1="{:.1f}" y1="{:.1f}" x2="{:.1f}" y2="{:.1f}"/>'.format(
-            xp, yb, x, yl))
+            x, yb, x, yl))
         p.append('<rect class="p-base" x="{:.1f}" y="{:.1f}" width="7" height="7"/>'.format(
-            xp - 3.5, yb - 3.5))
+            x - 3.5, yb - 3.5))
         p.append('<circle class="p-halo" cx="{:.1f}" cy="{:.1f}" r="7"/>'.format(x, yl))
         p.append('<circle class="p-lum" cx="{:.1f}" cy="{:.1f}" r="4.5"><title>Luminario</title></circle>'.format(x, yl))
     p.append("</g>")
@@ -219,31 +208,17 @@ def _fila(i: int, r: Dict[str, Any]) -> str:
              fab=escape(r["fabricante"] or ""), w=_num(r["watts"], 1))
 
 
-def _montaje_de(r: Dict[str, Any]) -> Montaje:
-    """Reconstruye el montaje de un luminario desde `resultados.json`."""
-    return Montaje(
-        inclinacion=r.get("inclinacion_grados", 0.0),
-        luminarios_por_poste=r.get("luminarios_por_poste", 1),
-        angulo_separacion=r.get("angulo_separacion_grados", 0.0),
-    )
+def _rotulo_inclinacion(r: Dict[str, Any]) -> str:
+    """Lo que hay que decir de la inclinacion, y solo si no es cero.
 
-
-def _rotulo_montaje(r: Dict[str, Any]) -> str:
-    """Lo que hay que decir del montaje, y solo si no es el corriente.
-
-    El Excel de referencia usa estos parametros en el calculo y NO los escribe
-    en su reporte de salida. Eso costo una validacion entera (ver
-    reference/VALIDACION.md): dos corridas con montajes distintos producian
-    archivos indistinguibles salvo por los numeros.
+    El Excel de referencia la usa en el calculo y NO la escribe en su reporte
+    de salida. Eso costo una validacion entera (ver reference/VALIDACION.md):
+    dos corridas con inclinaciones distintas producian archivos
+    indistinguibles salvo por los numeros.
     """
-    partes = []
-    if r.get("inclinacion_grados"):
-        partes.append("{}° de inclinación".format(_num(r["inclinacion_grados"], 1)))
-    if r.get("luminarios_por_poste", 1) > 1:
-        partes.append("{} por poste".format(r["luminarios_por_poste"]))
-    if r.get("angulo_separacion_grados"):
-        partes.append("{}° de separación".format(_num(r["angulo_separacion_grados"], 1)))
-    return "".join(" &middot; " + escape(x) for x in partes)
+    if not r.get("inclinacion_grados"):
+        return ""
+    return " &middot; {}° de inclinación".format(_num(r["inclinacion_grados"], 1))
 
 
 def _detalle(i: int, r: Dict[str, Any], v: Vialidad, xs: List[float], ys: List[float]) -> str:
@@ -254,8 +229,8 @@ def _detalle(i: int, r: Dict[str, Any], v: Vialidad, xs: List[float], ys: List[f
         '<div class="mapa">{leyenda}{svg}</div>'
         "</section>"
     ).format(i=i, modelo=escape(r["catalogo"]), w=_num(r["watts"], 1),
-             extra=_rotulo_montaje(r),
-             svg=_isolux(i, v, xs, ys, _montaje_de(r)), leyenda=_leyenda())
+             extra=_rotulo_inclinacion(r),
+             svg=_isolux(i, v, xs, ys), leyenda=_leyenda())
 
 
 CSS = """
@@ -730,19 +705,17 @@ def html(datos: Dict[str, Any]) -> str:
     # validacion entera (ver reference/VALIDACION.md): un estudio inclinado no
     # debe verse igual que uno sin inclinar.
     # Lista y no diccionario: un mismo .ies puede aparecer dos veces en el
-    # estudio con montajes distintos, que es justo la comparacion interesante
-    # ("el mismo luminario, uno o dos por poste"), y un dict por catalogo se
-    # comeria una de las dos.
-    rotulos = [(r["catalogo"], _rotulo_montaje(r).replace(" &middot; ", "", 1))
-               for r in res]
-    distintos = {rot for _, rot in rotulos if rot}
-    if distintos:
-        if len(distintos) == 1 and all(rot for _, rot in rotulos):
-            ident.append(("Montaje", distintos.pop()))
+    # estudio con inclinaciones distintas, y un dict por catalogo se comeria
+    # una de las dos.
+    grados = [(r["catalogo"], _num(r.get("inclinacion_grados") or 0.0, 1))
+              for r in res]
+    distintos = {g for _, g in grados}
+    if distintos != {"0.0"}:
+        if len(distintos) == 1:
+            ident.append(("Inclinación del brazo", distintos.pop() + "°"))
         else:
-            ident.append(("Montaje", "; ".join(
-                "{}: {}".format(escape(cat), rot or "corriente")
-                for cat, rot in rotulos)))
+            ident.append(("Inclinación del brazo", "; ".join(
+                "{}: {}°".format(escape(cat), g) for cat, g in grados)))
     ident_html = "".join(
         '<div><span class="k">{}</span><span class="v">{}</span></div>'.format(k, val)
         for k, val in ident

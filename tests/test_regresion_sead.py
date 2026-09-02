@@ -13,10 +13,9 @@ constantes mas abajo; el enunciado original las tenia en 0.5/1.5 %). La
 uniformidad se deriva de promedio/minimo, asi que no lleva tolerancia propia,
 pero se reporta para diagnostico.
 
-Esta suite es tambien la que prueba que el montaje por omision --un luminario
-por poste, sin cabeceo ni separacion-- deja el calculo exactamente donde
-estaba, que es la unica red que tiene el camino de dos luminarios por poste
-(ver tests/test_montaje.py).
+Esta suite es tambien la que respalda la reescritura de
+`posiciones_luminarios` con la estructura de la 1.8.1: los 24 casos siguen
+cuadrando con los mismos numeros de antes.
 
 Si un caso no pasa, NO se relaja la tolerancia: se deja fallando.
 """
@@ -29,7 +28,7 @@ import pytest
 
 from engine import calc
 from engine import ies
-from engine.geometry import Montaje, Vialidad
+from engine.geometry import Vialidad
 
 RAIZ = Path(__file__).resolve().parent.parent
 JSON_CASOS = RAIZ / "reference" / "casos_sead.json"
@@ -125,16 +124,13 @@ def test_regresion_sead(nombre_estudio, caso):
         largo_brazo=geo["largo_brazo"],
     )
 
-    # El montaje es propiedad del luminario, no de la vialidad (igual que en el
-    # Excel). La inclinacion no viene en el .xlsx de salida; la trae
-    # casos_sead.json, ver la nota de INCLINACIONES en
-    # tools/extraer_casos_sead.py. Las 24 corridas son de un luminario por
-    # poste, que es el valor por omision.
+    # La inclinacion es propiedad del luminario, no de la vialidad (igual que
+    # en el Excel). No viene en el .xlsx de salida; la trae casos_sead.json,
+    # ver la nota de INCLINACIONES en tools/extraer_casos_sead.py.
     inclinacion = caso["luminario"].get("inclinacion", 0.0)
-    montaje = Montaje(inclinacion=inclinacion)
 
     malla = calc.calcula(v, foto, geo["llf"], modo=calc.MODO_CORRECTO,
-                         montaje=montaje)
+                         inclinacion=inclinacion)
 
     err_prom = _error_pct(esperado["promedio"], malla.promedio)
     err_min = _error_pct(esperado["minimo"], malla.minimo)

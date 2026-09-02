@@ -31,21 +31,15 @@ luminario, con 0° por omisión, y mueve el resultado de verdad: 15° cambian el
 Eprom un 6 % y el Emín un 14 %. Si el luminario se monta cabeceado sobre el
 brazo, hay que declararlo.
 
-**Sin validar: dos luminarios por poste.** El motor los soporta —portados del
-mismo VBA— pero ninguna corrida de referencia los usa, así que no hay medición
-que lo respalde. Con el valor por omisión de un luminario por poste el camino
-es demostrablemente neutro: las 24 corridas siguen cuadrando. Si vas a entregar
-un estudio con dos luminarios por poste, conviene contrastar una corrida antes.
-
-No es casualidad que falte: en la herramienta original la opción está a medio
-terminar y no se anuncia en la interfaz en español (el detalle está en
-[`reference/sead_vba_1.8.1/README.md`](reference/sead_vba_1.8.1/README.md)).
-
-**Ojo: el doble brazo del camellón no es esto.** En `central doble` ya hay dos
-luminarios por poste, uno por sentido, y lo pone la disposición: el DPEA cuenta
-dos por tramo sin que haya que declarar nada. `luminarios_por_poste` es un
-multiplicador aparte, así que ponerlo en 2 sobre `central doble` da cuatro
-brazos por poste y cuadruplica la carga del tramo.
+**Dos luminarios por poste: solo en el camellón.** En `central doble` cada
+poste cuelga dos brazos, uno por sentido, y lo pone la propia disposición — el
+DPEA ya cuenta dos luminarios por tramo sin declarar nada. El multiplicador
+genérico del Excel (`selectedFixturesPerPole`, que pondría dos brazos en
+cualquier disposición) **no se implementa a propósito**: la interfaz original no
+lo ofrece de forma usable, ninguna de las 24 corridas lo usa y en el camellón se
+confundiría con el doble brazo, cuadruplicando el DPEA. Declararlo en la entrada
+da error, no se ignora. El detalle está en
+[`reference/sead_vba_1.8.1/README.md`](reference/sead_vba_1.8.1/README.md).
 
 ---
 
@@ -132,8 +126,6 @@ Crea `estudios/<nombre>/entrada.json`:
 | `luminarios[].archivo` | Ruta a un `.ies` o nombre de uno indexado en `catalogo/`. |
 | `luminarios[].watts` | Opcional. **Sobrescribe** los watts del archivo. Úsalo cuando el `.ies` no los declara o evalúas otro driver. |
 | `luminarios[].inclinacion` | Opcional, **0° por omisión**. Cabeceo del luminario sobre el brazo, en grados, positivo hacia la calzada. Es propiedad del luminario, no de la vialidad. No es cosmético: entra al cálculo. |
-| `luminarios[].luminarios_por_poste` | Opcional, **1 por omisión**. Con 2, cada poste lleva dos brazos; duplica también la carga del tramo, así que cambia el DPEA. Más de 2 se rechaza. |
-| `luminarios[].angulo_separacion` | Opcional, **0° por omisión**. Ángulo entre los dos brazos de un mismo poste. Solo válido con 2 luminarios por poste. |
 | `modo_azimut` | Opcional. `correcto` (por omisión, IESNA RP-8). `cuadrante` existe solo para diagnóstico. |
 
 Las clasificaciones se resuelven de forma tolerante: `"tipo a"`, `"residencial

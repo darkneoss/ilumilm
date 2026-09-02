@@ -74,8 +74,9 @@ Las otras dos entradas nuevas de la 1.8.1, ambas en `FixtureData`:
 * `selectedSeparationAngle` — separa en X los brazos de un mismo poste y les da
   giros opuestos sobre Z (`FixturePositions.bas:45,88-90`).
 
-Están portadas (`engine.geometry.Montaje`), pero **la interfaz no las ofrece de
-forma usable**, y por eso ninguna corrida de referencia las usa:
+**No están portadas, a propósito** (ver abajo). Y por si hiciera falta la razón
+principal: **la interfaz no las ofrece de forma usable**, y por eso ninguna
+corrida de referencia las usa.
 
 * En la biblioteca de luminarios (`Fixtures!U36:V36`) los encabezados existen y
   están traducidos, pero las celdas de captura de los luminarios agregados por
@@ -104,5 +105,15 @@ por tramo en esa disposición sin tocar nada más.
 
 `selectedFixturesPerPole` es un multiplicador aparte que aplica a **cualquier**
 disposición. Combinado con central doble daría cuatro brazos por poste y cuatro
-veces la carga del tramo. El original lo permite y el port lo replica, pero es
-casi seguro que no sea lo que alguien quiere.
+veces la carga del tramo. El original lo permite; el port **no**, y por eso:
+
+* No hay corrida de referencia contra la que validarlo, ni forma cómoda de
+  conseguirla.
+* El caso real de dos luminarios por poste —el camellón— ya está cubierto por la
+  disposición, medido contra tres corridas.
+* Lo único que aporta de nuevo es una vía silenciosa para cuadruplicar el DPEA,
+  que es criterio de cumplimiento.
+
+Declararlo en `entrada.json` da error con el mensaje que apunta a `central
+doble`. Estuvo implementado en el commit `590c665` y se quitó en el siguiente;
+si algún día aparece una corrida que lo use, el código está en el historial.

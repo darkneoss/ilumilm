@@ -261,6 +261,7 @@ p{margin:0}
 header .sub,.notas{max-width:var(--medida)}
 header .sub{color:var(--ink-2); margin-top:10px}
 .barra{display:flex; align-items:flex-start; justify-content:space-between; gap:20px}
+.acciones{flex:none; display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end}
 .tema{
   flex:none; display:inline-flex; align-items:center; gap:7px; cursor:pointer;
   background:var(--surface); color:var(--ink-2); border:1px solid var(--line);
@@ -359,7 +360,7 @@ tr.recomendado td:first-child{box-shadow:inset 3px 0 0 var(--amber)}
 .veredicto.bad{color:var(--bad); background:var(--bad-bg)}
 .falla{display:block; margin-top:5px; font-size:11.5px; color:var(--bad); line-height:1.45}
 
-@media (max-width:760px){
+@media screen and (max-width:760px){
   .tablabox{overflow-x:visible; border:none; background:none; border-radius:0}
   table{min-width:0; display:block}
   thead{display:none}
@@ -427,6 +428,37 @@ tr.recomendado td:first-child{box-shadow:inset 3px 0 0 var(--amber)}
 .notas strong{color:var(--ink)}
 footer{font-size:12.5px; color:var(--ink-3); border-top:1px solid var(--line); padding-top:18px; max-width:var(--medida)}
 @media (prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important}}
+
+/* Impresion y PDF ------------------------------------------------------
+   El papel es un entregable congelado: no lleva controles, y tiene que
+   decir con que clasificacion, interpostal y altura se genero, porque en
+   pantalla esos tres se mueven y el PDF ya no puede explicarse solo. */
+.solo-print{display:none}
+@media print{
+  :root,:root[data-theme="dark"],:root[data-theme="light"]{
+    --ground:#ffffff; --surface:#ffffff; --surface-2:#f1f4f8;
+    --ink:#14181f; --ink-2:#3d4550; --ink-3:#4a5361;
+    --line:#c6ccd6; --slate:#1f3a5f; --amber:#a06a12; --amber-txt:#7a4e06;
+    --ok:#186b42; --ok-bg:#e7f3ec; --bad:#a01f18; --bad-bg:#fbeae8;
+  }
+  @page{size:A4; margin:14mm}
+  html,body{background:#fff}
+  /* sin esto el mapa isolux se imprime en blanco: es todo color de fondo */
+  body{font-size:11pt; -webkit-print-color-adjust:exact; print-color-adjust:exact}
+  .wrap{max-width:none; padding:0; gap:22px}
+  h1{font-size:23pt} h2{font-size:15pt} h3{font-size:12.5pt}
+  .acciones,.panel{display:none!important}
+  .solo-print{display:grid}
+  .tablabox,.mapa{overflow:visible}
+  table{min-width:0; font-size:9.5pt}
+  th,td{padding:7px 8px}
+  .isolux{min-width:0}
+  .isolux .celda{font-size:9px}
+  thead{display:table-header-group}
+  tr,.ident,.criterio,.detalle,footer{break-inside:avoid; page-break-inside:avoid}
+  h1,h2,h3{break-after:avoid; page-break-after:avoid}
+  .detalle{padding-top:14px}
+}
 """
 
 JS = r"""
@@ -577,7 +609,22 @@ JS = r"""
       ' m. ' + cumplen + ' de ' + LUM.length + ' cumplen los tres criterios de la norma.' +
       (mejor >= 0 ? ' Se recomienda el <strong>' + LUM[mejor].cat +
         '</strong> por ser el de menor potencia entre los que cumplen.' : '');
+
+    // Los tres parametros moviles, para el papel: un PDF sin ellos no dice
+    // contra que umbrales se juzgo ni con que geometria se calculo.
+    document.getElementById('cfgprint').innerHTML = [
+      ['Clasificación de vialidad', selC.options[selC.selectedIndex].text],
+      ['Distancia interpostal', fmt(S, 2) + ' m'],
+      ['Altura de montaje', fmt(H, 2) + ' m']
+    ].map(function(kv){
+      return '<div><span class="k">' + kv[0] + '</span><span class="v">' +
+             kv[1] + '</span></div>';
+    }).join('');
   }
+
+  document.getElementById('imprimir').addEventListener('click', function(){
+    window.print();
+  });
 
   rgS.addEventListener('input', function(){ iS = +rgS.value; pinta(); });
   rgH.addEventListener('input', function(){ iH = +rgH.value; pinta(); });
@@ -665,11 +712,17 @@ def html(datos: Dict[str, Any]) -> str:
         <p class="eyebrow">Memoria de cálculo &middot; NOM-013-ENER-2013</p>
         <h1>{titulo}</h1>
       </div>
+      <div class="acciones">
+      <button class="tema" id="imprimir" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10a1 1 0 011 1v3H6V4a1 1 0 011-1zm12 6a3 3 0 013 3v5a1 1 0 01-1 1h-2v2a1 1 0 01-1 1H6a1 1 0 01-1-1v-2H3a1 1 0 01-1-1v-5a3 3 0 013-3zm-2 8H7v3h10zm2-4.5a1 1 0 100 2 1 1 0 000-2z"/></svg>
+        <span>Imprimir / PDF</span>
+      </button>
       <button class="tema" id="tema" type="button" aria-pressed="false">
         <svg class="i-sol" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 17a5 5 0 100-10 5 5 0 000 10zm0 2.5a1 1 0 011 1V22a1 1 0 11-2 0v-1.5a1 1 0 011-1zm0-19a1 1 0 011 1V3a1 1 0 11-2 0V1.5a1 1 0 011-1zM21 11h1.5a1 1 0 110 2H21a1 1 0 110-2zM1.5 11H3a1 1 0 110 2H1.5a1 1 0 110-2zm16.9 6l1 1a1 1 0 01-1.4 1.4l-1-1a1 1 0 011.4-1.4zM5 3.6l1 1A1 1 0 014.6 6l-1-1A1 1 0 015 3.6zm14.4 0A1 1 0 0120.4 5l-1 1A1 1 0 0118 4.6zM6 17a1 1 0 011.4 1.4l-1 1A1 1 0 015 18z"/></svg>
         <svg class="i-luna" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 13.2A9 9 0 1110.8 3a7 7 0 1010.2 10.2z"/></svg>
         <span class="txt">Modo claro</span>
       </button>
+      </div>
     </div>
     <p class="sub" id="resumen"></p>
   </header>
@@ -702,6 +755,7 @@ def html(datos: Dict[str, Any]) -> str:
   </section>
 
   <section class="ident">{ident}</section>
+  <section class="ident solo-print" id="cfgprint"></section>
 
   <section>
     <h2>Comparativa</h2>

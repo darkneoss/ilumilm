@@ -132,6 +132,27 @@ python -m engine.report estudios/<nombre>/resultados.json
 
 Produce `reporte.html`, autocontenido y listo para publicar o enviar.
 
+### 5. PDF (opcional)
+
+El reporte trae un botón **Imprimir / PDF** que imprime lo que estés viendo en
+ese momento, con los valores que hayas dejado en los controles.
+
+Para generarlo sin abrir el navegador:
+
+```bash
+python tools/pdf.py estudios/<nombre>/reporte.html     --clasificacion "Vías primarias" --interpostal 40 --altura 10
+```
+
+Los tres argumentos son opcionales; sin ellos usa los valores del propio
+estudio. Requiere Playwright con Chromium (`python -m playwright install
+chromium`), que no hace falta para nada más.
+
+**En papel hay que decidir antes lo que en pantalla se movía.** El PDF no
+lleva controles, así que la clasificación, la interpostal y la altura con que
+se generó quedan impresas en su propio bloque, arriba de la comparativa. Un
+PDF sin ese dato no se puede auditar: los umbrales de la norma dependen de la
+clasificación, y esa no se deduce de la geometría.
+
 ---
 
 ## El reporte
@@ -181,8 +202,9 @@ engine/nom.py        tablas de la norma, DPEA y veredicto
 engine/catalogo.py   índice de archivos .ies
 engine/cli.py        corre un estudio desde entrada.json
 engine/report.py     genera el HTML
+tools/pdf.py         convierte el reporte a PDF con los parámetros fijos
 catalogo/            fotometrías .ies + índice
-estudios/<nombre>/   entrada.json y salidas (estas no se versionan)
+estudios/<nombre>/   entrada.json y salidas (no se versiona: es trabajo)
 reference/           VBA extraído del Excel, especificaciones y validación
 tools/               extracción del VBA y de los casos de regresión
 tests/               NOM + regresión contra las corridas de referencia

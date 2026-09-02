@@ -24,6 +24,8 @@ from typing import Any, Dict, List, Sequence
 
 from . import nom
 
+TITULO = "Estudio de alumbrado público"
+
 # Rampa de la escala isolux: de la noche al vapor de sodio. Los luminarios de
 # vialidad viven en ese gradiente, asi que la escala dice algo del tema en vez
 # de ser un arcoiris generico.
@@ -433,7 +435,7 @@ JS = """
 """
 
 
-def html(datos: Dict[str, Any], nombre: str = "") -> str:
+def html(datos: Dict[str, Any]) -> str:
     v = datos["vialidad"]
     n = datos["nom"]
     p = datos["perdidas"]
@@ -498,11 +500,6 @@ def html(datos: Dict[str, Any], nombre: str = "") -> str:
         + "".join('<div><span class="k">{}</span><span class="v">{}</span></div>'.format(k, val)
                   for k, val in ident)
     )
-
-    # El nombre del estudio (la carpeta) es su identidad: en uso real es el
-    # nombre de la vialidad. La clasificacion ya no sirve como titulo porque
-    # ahora es un selector.
-    titulo = nombre.replace("_", " ").replace("-", " ").strip() or "Estudio de alumbrado publico"
 
     return """<meta charset="utf-8">
 <title>{titulo}</title>
@@ -580,7 +577,7 @@ const LUM = {lum};
 """.format(
         css=CSS,
         js=JS,
-        titulo=escape(titulo),
+        titulo=TITULO,
         ident=ident_html,
         filas="".join(_fila(i, r) for i, r in enumerate(res)),
         detalles="".join(_detalle(i, r) for i, r in enumerate(res)),
@@ -601,7 +598,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 1
     datos = json.loads(ruta.read_text(encoding="utf-8"))
     destino = ruta.parent / "reporte.html"
-    destino.write_text(html(datos, ruta.parent.name), encoding="utf-8")
+    destino.write_text(html(datos), encoding="utf-8")
     print("Reporte escrito en {}".format(destino))
     return 0
 

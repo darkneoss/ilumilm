@@ -1,9 +1,9 @@
 """
-Regresion contra los 7 estudios reales del SEAD Street Lighting Tool
+Regresion contra los 9 estudios reales del SEAD Street Lighting Tool
 (assets/estudios/*.xlsx), extraidos previamente a reference/casos_sead.json
 por tools/extraer_casos_sead.py.
 
-Un caso = un estudio x un luminario evaluado en el (14 en total). Se corre el
+Un caso = un estudio x un luminario evaluado en el (18 en total). Se corre el
 motor en MODO_CORRECTO (el que coincide con el Excel, ver engine/calc.py) y
 se compara contra el promedio/minimo/maximo/uniformidad que dejo cacheado el
 Excel.
@@ -42,9 +42,14 @@ def _busca_ies(nombre):
             return ruta
     return None
 
-TOL_PROMEDIO_PCT = 0.5
-TOL_MAXIMO_PCT = 0.5
-TOL_MINIMO_PCT = 1.5
+# El error observado hoy es de 0.008 % en el peor caso (ver VALIDACION.md), y la
+# mitad de los casos cuadra exacto. Las tolerancias estaban en 0.5/1.5 %, tan
+# holgadas que escondieron un luminario de mas por lado durante toda la
+# validacion. 0.05 % deja seis veces de margen sobre el residuo real de
+# interpolacion y sigue siendo capaz de cachar un error de geometria.
+TOL_PROMEDIO_PCT = 0.05
+TOL_MAXIMO_PCT = 0.05
+TOL_MINIMO_PCT = 0.05
 
 # BUG REPORTADO (no se toca engine/geometry.py, ver reference/VALIDACION.md):
 # `normaliza_disposicion` NO reconoce los textos exactos que trae la columna
@@ -117,19 +122,25 @@ def test_regresion_sead(nombre_estudio, caso):
         largo_brazo=geo["largo_brazo"],
     )
 
-    malla = calc.calcula(v, foto, geo["llf"], modo=calc.MODO_CORRECTO)
+    # La inclinacion es propiedad del luminario, no de la vialidad (igual que
+    # en el Excel). No viene en el .xlsx de salida; la trae casos_sead.json,
+    # ver la nota de INCLINACIONES en tools/extraer_casos_sead.py.
+    inclinacion = caso["luminario"].get("inclinacion", 0.0)
+
+    malla = calc.calcula(v, foto, geo["llf"], modo=calc.MODO_CORRECTO,
+                         inclinacion=inclinacion)
 
     err_prom = _error_pct(esperado["promedio"], malla.promedio)
     err_min = _error_pct(esperado["minimo"], malla.minimo)
     err_max = _error_pct(esperado["maximo"], malla.maximo)
 
     detalle = (
-        "\nEstudio: {}\nLuminario: {}\n"
+        "\nEstudio: {}\nLuminario: {} (inclinacion {:.1f} grados)\n"
         "Promedio: excel={:.4f} motor={:.4f} error={:.3f}%\n"
         "Minimo:   excel={:.4f} motor={:.4f} error={:.3f}%\n"
         "Maximo:   excel={:.4f} motor={:.4f} error={:.3f}%\n"
     ).format(
-        nombre_estudio, caso["luminario"]["archivo_ies"],
+        nombre_estudio, caso["luminario"]["archivo_ies"], inclinacion,
         esperado["promedio"], malla.promedio, err_prom,
         esperado["minimo"], malla.minimo, err_min,
         esperado["maximo"], malla.maximo, err_max,

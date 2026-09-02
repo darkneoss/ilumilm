@@ -9,23 +9,29 @@ dependencias externas** — solo biblioteca estándar.
 
 ## Estado de validación
 
-Contrastado contra 14 corridas reales de la herramienta que reemplaza:
+Contrastado contra 18 corridas reales de la herramienta que reemplaza, diez de
+ellas con coincidencia exacta:
 
 | Métrica | Error máximo |
 |---|--:|
-| Iluminancia promedio | 0.005 % |
-| Iluminancia máxima | 0.006 % |
-| Iluminancia mínima | 0.145 % |
-| Uniformidad | 0.139 % |
+| Iluminancia promedio | 0.004 % |
+| Iluminancia máxima | 0.008 % |
+| Iluminancia mínima | 0.006 % |
+| Uniformidad | 0.006 % |
 
 El detalle está en [`reference/VALIDACION.md`](reference/VALIDACION.md) y la
 suite de regresión en `tests/`.
 
-**Disposiciones validadas: unilateral y central doble.** Tresbolillo y bilateral
-opuesta no aparecen en ninguna corrida de referencia disponible. Comparten la
-ruta de código con central doble, que sí está validada, pero eso es un argumento
-de construcción, no una medición: si vas a entregar un estudio con esas
-disposiciones, conviene contrastar una corrida antes.
+**Disposiciones validadas: unilateral, central doble y bilateral opuesta.**
+Tresbolillo no aparece en ninguna corrida de referencia disponible. Comparte la
+ruta de código con las otras tres, que sí están validadas, pero eso es un
+argumento de construcción, no una medición: si vas a entregar un estudio en
+tresbolillo, conviene contrastar una corrida antes.
+
+**Inclinación del luminario validada a 0°, 5° y 15°.** Es un parámetro por
+luminario, con 0° por omisión, y mueve el resultado de verdad: 15° cambian el
+Eprom un 6 % y el Emín un 14 %. Si el luminario se monta cabeceado sobre el
+brazo, hay que declararlo.
 
 ---
 
@@ -97,7 +103,7 @@ Crea `estudios/<nombre>/entrada.json`:
   "perdidas": { "lld": 0.85, "ldd": 0.90, "bf": 1.0 },
   "luminarios": [
     { "archivo": "V1050UN2M50.ies" },
-    { "archivo": "V2100UN2M50.ies", "watts": 100.0 }
+    { "archivo": "V2100UN2M50.ies", "watts": 100.0, "inclinacion": 5.0 }
   ]
 }
 ```
@@ -111,6 +117,7 @@ Crea `estudios/<nombre>/entrada.json`:
 | `perdidas` | Opcional. Por omisión `0.85 × 0.90 × 1.0` (LED). El factor de balastro es 1 porque el driver ya viene en la potencia nominal. |
 | `luminarios[].archivo` | Ruta a un `.ies` o nombre de uno indexado en `catalogo/`. |
 | `luminarios[].watts` | Opcional. **Sobrescribe** los watts del archivo. Úsalo cuando el `.ies` no los declara o evalúas otro driver. |
+| `luminarios[].inclinacion` | Opcional, **0° por omisión**. Cabeceo del luminario sobre el brazo, en grados, positivo hacia la calzada. Es propiedad del luminario, no de la vialidad. No es cosmético: entra al cálculo. |
 | `modo_azimut` | Opcional. `correcto` (por omisión, IESNA RP-8). `cuadrante` existe solo para diagnóstico. |
 
 Las clasificaciones se resuelven de forma tolerante: `"tipo a"`, `"residencial
@@ -205,7 +212,9 @@ engine/report.py     genera el HTML
 tools/pdf.py         convierte el reporte a PDF con los parámetros fijos
 catalogo/            fotometrías .ies + índice
 estudios/<nombre>/   entrada.json y salidas (no se versiona: es trabajo)
-reference/           VBA extraído del Excel, especificaciones y validación
+reference/           VBA extraído del Excel (v1.8.1 es la de referencia,
+                     v1.7.6 se conserva por las citas de las especificaciones),
+                     especificaciones y validación
 tools/               extracción del VBA y de los casos de regresión
 tests/               NOM + regresión contra las corridas de referencia
 ```

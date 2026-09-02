@@ -29,6 +29,11 @@ siempre los valores por omisión, que cubren el caso típico.
 **Pérdidas y luminarios**
 - LLD (depreciación de lúmenes) **0.85**, LDD (suciedad) **0.90**, BF **1.0** para LED
 - los archivos `.ies` a evaluar
+- inclinación del luminario sobre el brazo [grados], **0 por omisión**, positiva
+  hacia la calzada. Es por luminario, no de la vialidad. **No la preguntes si el
+  usuario no la menciona** — 0 es lo normal y lo que usa la herramienta de
+  referencia. Pero si la menciona, decláralas: no es un dato de dibujo, entra al
+  cálculo, y 15° mueven el Eprom un 6 % y el Emín un 14 %.
 
 ## Cómo correrlo
 

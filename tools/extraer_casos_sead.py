@@ -1,5 +1,5 @@
 """
-Extrae, de cada uno de los 7 estudios reales en `assets/estudios/*.xlsx`
+Extrae, de cada uno de los estudios reales en `assets/estudios/*.xlsx`
 (salidas de la herramienta Excel "SEAD Street Lighting Tool"), la geometria
 de entrada (hoja "Input") y los resultados esperados de iluminancia (hoja
 "Illuminance"), para las filas cuyo luminario ("Nombre de la luminaria") sea
@@ -58,6 +58,26 @@ COLS_ILUM = {
 }
 
 FILA_LINEA_BASE = "Línea base (referencia)"
+
+# Inclinación del luminario (tilt), en grados, por (nombre del .xlsx, .ies).
+#
+# ESTE DATO NO ESTÁ EN EL ARCHIVO. La herramienta lo captura por luminario
+# (`Fixtures!T36`, guardado en `FixtureData!selectedTilt`) y lo usa en el
+# cálculo desde la v1.8.1, pero NO lo escribe en la hoja "Input" del reporte de
+# salida: la cadena "Inclinación ( grados)" solo aparece en la hoja de
+# traducciones. Así que la única forma de conocerlo es que quien corrió el
+# estudio lo diga.
+#
+# Los dos valores de abajo los declaró el usuario y se confirmaron por
+# ingeniería inversa: barriendo la inclinación, 5° y 15° reproducen las cuatro
+# métricas de esa corrida al 0.002 %, mientras que 0° se desvía hasta 24 % en
+# uniformidad. No es un dato de fe, es un dato medido. Ver VALIDACION.md.
+#
+# Lo que NO está aquí se asume 0, que es lo que el Excel usa por omisión.
+INCLINACIONES = {
+    ("IESResults09_02_26 12_57_51", "V1070UN2M50.ies"): 5.0,
+    ("IESResults09_02_26 12_57_51", "V2100UN2M50.ies"): 15.0,
+}
 
 
 def _leer_filas(sh, cols: dict, fila_inicio: int = 4) -> list:
@@ -159,6 +179,7 @@ def extrae_estudio(ruta_xlsx: Path) -> dict:
                 "archivo_ies": nombre,
                 "tipo": fin["tipo"],
                 "vatios": fin["vatios"],
+                "inclinacion": INCLINACIONES.get((ruta_xlsx.stem, nombre), 0.0),
             },
             "geometria": {
                 "luminarias_km": fin["luminarias_km"],

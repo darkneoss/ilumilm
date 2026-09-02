@@ -1,6 +1,6 @@
 # Validación del motor contra estudios reales
 
-Contraste de `engine/` contra 14 corridas reales de la herramienta Excel de
+Contraste de `engine/` contra 18 corridas reales de la herramienta Excel de
 referencia, extraídas por `tools/extraer_casos_sead.py` y congeladas en
 `reference/casos_sead.json`. La suite vive en `tests/test_regresion_sead.py`.
 
@@ -14,42 +14,54 @@ precargado en el Excel cuyo archivo .ies no tenemos.
 
 ## Resultados
 
-| Estudio | Luminario | Geometría | Eprom ref | Eprom motor | err | Emin ref | Emin motor | err | Emax ref | Emax motor | err |
-|---|---|---|--:|--:|--:|--:|--:|--:|--:|--:|--:|
-| estudio-01 | V1070UN2M50 | 2x2.50 cam 0.0 h8 S39.80 unilateral | 15.506 | 15.506 | -0.001% | 6.929 | 6.929 | +0.002% | 39.414 | 39.411 | -0.005% |
-| estudio-01 | V2100UN2M50 | 2x2.50 cam 0.0 h8 S39.80 unilateral | 17.669 | 17.669 | +0.002% | 5.293 | 5.294 | +0.006% | 38.339 | 38.340 | +0.002% |
-| estudio-02 | V1070UN2M50 | 2x4.09 cam 0.0 h7 S33.15 unilateral | 18.239 | 18.240 | +0.003% | 10.434 | 10.434 | +0.000% | 44.753 | 44.751 | -0.006% |
-| estudio-02 | V2100UN2M50 | 2x4.09 cam 0.0 h7 S33.15 unilateral | 22.878 | 22.879 | +0.003% | 8.559 | 8.559 | +0.007% | 39.790 | 39.791 | +0.003% |
-| estudio-03 | V2100UN2M50 | 4x2.68 cam 4.0 h9 S27.00 central doble | 31.814 | 31.814 | +0.000% | 20.685 | 20.685 | +0.000% | 39.210 | 39.210 | +0.000% |
-| estudio-03 | V2130UN2M50 | 4x2.68 cam 4.0 h9 S27.00 central doble | 35.702 | 35.702 | +0.000% | 22.122 | 22.122 | +0.000% | 66.653 | 66.653 | +0.000% |
-| estudio-04 | V1070UN2M50 | 2x4.71 cam 0.0 h8 S35.83 unilateral | 15.307 | 15.308 | +0.005% | 8.937 | 8.938 | +0.005% | 39.916 | 39.917 | +0.004% |
-| estudio-04 | V2100UN2M50 | 2x4.71 cam 0.0 h8 S35.83 unilateral | 18.917 | 18.918 | +0.003% | 7.776 | 7.777 | +0.006% | 35.231 | 35.232 | +0.003% |
-| estudio-05 | V1070UN2M50 | 4x3.36 cam 0.0 h6 S30.21 unilateral | 15.297 | 15.297 | +0.001% | 1.222 | 1.222 | +0.015% | 54.715 | 54.712 | -0.006% |
-| estudio-05 | V2100UN2M50 | 4x3.36 cam 0.0 h6 S30.21 unilateral | 17.514 | 17.515 | +0.005% | 0.893 | 0.894 | +0.097% | 59.297 | 59.298 | +0.002% |
-| estudio-06 | V2130UN2M50 | 2x4.35 cam 0.0 h8 S36.46 unilateral | 24.970 | 24.971 | +0.001% | 12.694 | 12.694 | +0.002% | 64.523 | 64.524 | +0.001% |
-| estudio-06 | V3160UN2M50 | 2x4.35 cam 0.0 h8 S36.46 unilateral | 35.001 | 35.002 | +0.002% | 17.047 | 17.048 | +0.002% | 90.936 | 90.940 | +0.005% |
-| estudio-07 | V2130UN2M50 | 6x3.33 cam 0.0 h8 S30.00 unilateral | 16.450 | 16.451 | +0.005% | 0.578 | 0.579 | +0.145% | 71.527 | 71.528 | +0.002% |
-| estudio-07 | V3160UN2M50 | 6x3.33 cam 0.0 h8 S30.00 unilateral | 22.746 | 22.747 | +0.004% | 0.724 | 0.725 | +0.114% | 96.252 | 96.256 | +0.004% |
+| Estudio | Luminario | Geometría | Tilt | Eprom ref | Eprom motor | err | Emin ref | Emin motor | err | Emax ref | Emax motor | err |
+|---|---|---|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|
+| estudio-01 | V1070UN2M50 | 2x2.50 cam 0.0 h7.5 S39.80 unilateral | 0° | 15.506 | 15.506 | -0.002% | 6.929 | 6.929 | -0.000% | 39.414 | 39.411 | -0.006% |
+| estudio-01 | V2100UN2M50 | 2x2.50 cam 0.0 h7.5 S39.80 unilateral | 0° | 17.669 | 17.669 | -0.000% | 5.293 | 5.293 | -0.000% | 38.339 | 38.339 | +0.000% |
+| estudio-02 | V1070UN2M50 | 2x4.09 cam 0.0 h7 S33.15 unilateral | 0° | 18.239 | 18.240 | +0.002% | 10.434 | 10.434 | -0.002% | 44.753 | 44.750 | -0.007% |
+| estudio-02 | V2100UN2M50 | 2x4.09 cam 0.0 h7 S33.15 unilateral | 0° | 22.878 | 22.878 | +0.000% | 8.559 | 8.559 | +0.000% | 39.790 | 39.790 | -0.000% |
+| estudio-03 | V2100UN2M50 | 4x2.68 cam 4.0 h9 S27.00 central doble | 0° | 31.814 | 31.814 | +0.000% | 20.685 | 20.685 | +0.000% | 39.210 | 39.210 | +0.000% |
+| estudio-03 | V2130UN2M50 | 4x2.68 cam 4.0 h9 S27.00 central doble | 0° | 35.702 | 35.702 | +0.000% | 22.122 | 22.122 | +0.000% | 66.653 | 66.653 | +0.000% |
+| estudio-04 | V1070UN2M50 | 2x4.71 cam 0.0 h7.5 S35.83 unilateral | 0° | 15.307 | 15.307 | +0.004% | 8.937 | 8.937 | +0.003% | 39.916 | 39.917 | +0.003% |
+| estudio-04 | V2100UN2M50 | 2x4.71 cam 0.0 h7.5 S35.83 unilateral | 0° | 18.917 | 18.917 | +0.000% | 7.776 | 7.776 | +0.000% | 35.231 | 35.231 | +0.000% |
+| estudio-05 | V1070UN2M50 | 4x3.36 cam 0.0 h6 S30.21 unilateral | 0° | 15.297 | 15.297 | -0.001% | 1.222 | 1.222 | +0.003% | 54.715 | 54.712 | -0.006% |
+| estudio-05 | V2100UN2M50 | 4x3.36 cam 0.0 h6 S30.21 unilateral | 0° | 17.514 | 17.514 | -0.000% | 0.893 | 0.893 | -0.000% | 59.297 | 59.297 | +0.000% |
+| estudio-06 | V2130UN2M50 | 2x4.35 cam 0.0 h7.5 S36.46 unilateral | 0° | 24.970 | 24.970 | -0.000% | 12.694 | 12.694 | -0.000% | 64.523 | 64.523 | -0.000% |
+| estudio-06 | V3160UN2M50 | 2x4.35 cam 0.0 h7.5 S36.46 unilateral | 0° | 35.001 | 35.001 | +0.001% | 17.047 | 17.047 | -0.000% | 90.936 | 90.940 | +0.004% |
+| estudio-07 | V2130UN2M50 | 6x3.33 cam 0.0 h7.5 S30.00 unilateral | 0° | 16.450 | 16.450 | +0.000% | 0.578 | 0.578 | +0.000% | 71.527 | 71.527 | +0.000% |
+| estudio-07 | V3160UN2M50 | 6x3.33 cam 0.0 h7.5 S30.00 unilateral | 0° | 22.746 | 22.746 | +0.000% | 0.724 | 0.724 | +0.006% | 96.252 | 96.254 | +0.003% |
+| estudio-08 | V1070UN2M50 | 4x3.54 cam 0.0 h10 S45.00 unilateral | 0° | 7.626 | 7.626 | +0.002% | 2.888 | 2.888 | +0.004% | 22.850 | 22.852 | +0.008% |
+| estudio-08 | V2100UN2M50 | 4x3.54 cam 0.0 h10 S45.00 unilateral | 0° | 9.820 | 9.820 | +0.000% | 1.506 | 1.506 | +0.000% | 20.761 | 20.761 | +0.000% |
+| estudio-09 | V1070UN2M50 | 4x3.54 cam 0.0 h10 S45.00 bilateral opuesta | 5° | 15.591 | 15.592 | +0.001% | 9.194 | 9.193 | -0.001% | 27.812 | 27.813 | +0.002% |
+| estudio-09 | V2100UN2M50 | 4x3.54 cam 0.0 h10 S45.00 bilateral opuesta | 15° | 18.462 | 18.462 | +0.000% | 10.020 | 10.020 | +0.000% | 30.193 | 30.193 | +0.000% |
 
 ## Error máximo observado
 
 | Métrica | Error máximo |
 |---|--:|
-| Promedio | 0.005 % |
-| Minimo | 0.145 % |
-| Maximo | 0.006 % |
-| Uniformidad | 0.139 % |
+| Promedio | 0.004 % |
+| Minimo | 0.006 % |
+| Maximo | 0.008 % |
+| Uniformidad | 0.006 % |
+
+Diez de los dieciocho casos coinciden con la referencia a cero exacto. El
+residuo de los otros ocho está siempre en los `.ies` grandes (V1070, V3160:
+~250 KB, malla angular fina) y es de interpolación, no de geometría.
 
 ## Cobertura
 
 Disposiciones presentes en los estudios y por tanto validadas:
-**central doble**, **unilateral**.
+**unilateral**, **central doble**, **bilateral opuesta**.
 
-**Sin validar: tresbolillo y bilateral opuesta.** No aparecen en ninguno de los
-estudios disponibles. Comparten la ruta de código con central doble, que sí quedó
-validada, pero eso es un argumento de construcción, no una medición.
+**Sin validar: tresbolillo.** No aparece en ninguno de los estudios
+disponibles. Comparte la ruta de código con las otras tres, que sí quedaron
+validadas, pero eso es un argumento de construcción, no una medición.
 
-## Dos correcciones que salieron de esta validación
+Inclinaciones validadas: **0°, 5° y 15°**, las tres sobre la misma geometría de
+cuatro carriles (estudios 08 y 09), y las dos distintas de cero en bilateral
+opuesta.
+
+## Cuatro correcciones que salieron de esta validación
 
 1. **Orientación del luminario.** Cada luminario necesita saber hacia qué lado
    mira: en las disposiciones de dos luminarios por tramo, la mitad apunta al
@@ -57,3 +69,60 @@ validada, pero eso es un argumento de construcción, no una medición.
    de la acera. Error antes de corregir: hasta +55 % en Emax y −78 % en Emin.
 2. **Retranqueo en central doble.** No aplica a un poste central: los dos brazos
    salen del eje del camellón. Aplicarlo daba 8 % de error en Emin.
+3. **Número de luminarios por lado.** Eran uno de más (hasta x = 5·S en vez de
+   4·S), heredado de un `ReDim` base 0 de la v1.7.6 que la 1.8.1 corrigió. El
+   sobrante aportaba poco, pero quitarlo bajó el error máximo de la suite de
+   0.145 % a 0.008 % y volvió exactos ocho de los dieciséis casos.
+4. **La inclinación del luminario faltaba por completo** (ver abajo).
+
+## La inclinación: cómo se encontró
+
+El estudio-09 fue el primero con **bilateral opuesta**, justo la disposición que
+estaba sin validar, y no cuadraba: hasta 6 % en Eprom, 14 % en Emin y **24 % en
+uniformidad**. Con esa disposición recién estrenada, la lectura obvia era un bug
+en su ruta de código.
+
+No lo era. Faltaba un parámetro de entrada.
+
+La herramienta captura la inclinación **por luminario** (`Fixtures!T36`,
+guardada en `FixtureData!selectedTilt`) y **no la escribe en el reporte de
+salida**: en el `.xlsx` la cadena «Inclinación ( grados)» solo aparece en la hoja
+de traducciones. Dos corridas con inclinaciones distintas producen archivos
+indistinguibles salvo por los números. Por eso pasó inadvertida durante toda la
+validación anterior: los siete primeros estudios se corrieron con 0°, que es el
+valor por omisión.
+
+El port tampoco la tenía, porque se hizo contra el VBA de la **v1.7.6**, donde
+la inclinación se captura en la interfaz pero está *muerta* en el cálculo
+(`tiltOnX = 0 / 180 * Pi`, a mano). La v1.7.7 la conectó («Finalized tilt» en la
+hoja `Versions`) y la 1.8.1 —la que generó todos estos estudios— la usa de
+verdad. Ver `reference/sead_vba_1.8.1/README.md`.
+
+La confirmación fue un barrido: implementada la ecuación de la 1.8.1, se probaron
+tres inclinaciones por caso.
+
+| Corrida | Luminario | Tilt | Eprom | Emin | Emax | Unif. |
+|---|---|--:|--:|--:|--:|--:|
+| estudio-09 | V1070 | 0° | 2.180 % | 4.087 % | 5.574 % | 1.988 % |
+| | | **+5°** | **0.001 %** | **0.001 %** | **0.002 %** | **0.002 %** |
+| | | −5° | 6.760 % | 13.138 % | 11.073 % | 7.342 % |
+| estudio-09 | V2100 | 0° | 6.382 % | 14.501 % | 5.041 % | 24.425 % |
+| | | **+15°** | **0.000 %** | **0.000 %** | **0.000 %** | **0.000 %** |
+| | | −15° | 10.101 % | 19.726 % | 11.780 % | 11.991 % |
+| estudio-08 | V1070 | **0°** | **0.002 %** | 0.004 % | 0.008 % | 0.002 % |
+| | | +5° | 2.232 % | 19.118 % | 1.208 % | 14.176 % |
+| estudio-08 | V2100 | **0°** | **0.000 %** | **0.000 %** | **0.000 %** | **0.000 %** |
+| | | +15° | 5.999 % | 122.276 % | 26.996 % | 57.710 % |
+
+Cuatro métricas independientes, dos luminarios y dos ángulos, todo al cuarto
+decimal. Los 5° y 15° que declaró quien corrió el estudio quedan confirmados por
+medición, y el signo positivo —inclinación hacia la calzada— también: el negativo
+se desvía entre 7 % y 20 %.
+
+Con la inclinación puesta, **bilateral opuesta cuadra al 0.002 %**. Su ruta de
+código siempre estuvo bien.
+
+Lección de método: cuando una disposición recién validada no cuadra, el sospechoso
+natural es su código, pero conviene descartar primero que no falte una entrada.
+Aquí el 24 % de error no estaba en el motor: estaba en un campo del Excel que el
+propio Excel no reporta.

@@ -211,11 +211,13 @@ def _fila(i: int, r: Dict[str, Any]) -> str:
 def _detalle(i: int, r: Dict[str, Any], v: Vialidad, xs: List[float], ys: List[float]) -> str:
     return (
         '<section class="detalle" data-i="{i}">'
-        '<h3>{modelo} <span class="w">{w} W</span></h3>'
+        '<h3>{modelo} <span class="w">{w} W{tilt}</span></h3>'
         '<div class="criterios"></div>'
         '<div class="mapa">{leyenda}{svg}</div>'
         "</section>"
     ).format(i=i, modelo=escape(r["catalogo"]), w=_num(r["watts"], 1),
+             tilt=(" &middot; {}° de inclinación".format(
+                 _num(r["inclinacion_grados"], 1)) if r.get("inclinacion_grados") else ""),
              svg=_isolux(i, v, xs, ys), leyenda=_leyenda())
 
 
@@ -686,6 +688,19 @@ def html(datos: Dict[str, Any]) -> str:
             _num(p["lld"], 2), _num(p["ldd"], 2), _num(p["bf"], 2), _num(p["llf_total"], 3))),
         ("Criterio de azimut", "IESNA RP-8"),
     ]
+    # La inclinacion solo se lista si alguien la movio. El Excel de referencia
+    # la usa en el calculo y NO la escribe en su reporte, y eso costo una
+    # validacion entera (ver reference/VALIDACION.md): un estudio inclinado no
+    # debe verse igual que uno sin inclinar.
+    inclinados = [r for r in res if r.get("inclinacion_grados")]
+    if inclinados:
+        if len({r["inclinacion_grados"] for r in inclinados}) == 1 and len(inclinados) == len(res):
+            ident.append(("Inclinación del brazo",
+                          "{}°".format(_num(inclinados[0]["inclinacion_grados"], 1))))
+        else:
+            ident.append(("Inclinación del brazo", ", ".join(
+                "{}: {}°".format(escape(r["catalogo"]), _num(r.get("inclinacion_grados", 0.0), 1))
+                for r in res)))
     ident_html = "".join(
         '<div><span class="k">{}</span><span class="v">{}</span></div>'.format(k, val)
         for k, val in ident

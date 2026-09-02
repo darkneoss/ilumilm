@@ -30,7 +30,7 @@ Formato de `entrada.json`
   "modo_azimut": "correcto",
   "luminarios": [
     { "archivo": "V1050UN2M50.ies" },
-    { "archivo": "V2100UN2M50.ies", "watts": 100.0 }
+    { "archivo": "V2100UN2M50.ies", "watts": 100.0, "inclinacion": 5.0 }
   ]
 }
 
@@ -42,6 +42,12 @@ Notas de diseño:
 - `watts` es opcional y, si viene, SOBREESCRIBE los watts del archivo .ies
   (declarados o de texto) para el cálculo de DPEA. Útil cuando el .ies no
   declara watts o cuando se quiere evaluar un driver distinto al de fábrica.
+- `inclinacion` es opcional, por omisión **0.0**: el cabeceo del luminario
+  sobre el brazo en grados, positivo hacia la calzada. Es propiedad del
+  luminario y no de la vialidad, igual que en el Excel de referencia
+  (`FixtureData!selectedTilt`), así que cada entrada de la lista trae la suya.
+  Mueve el resultado de verdad — 15° cambian el Eprom un 6 % y el Emín un
+  14 % — así que si el luminario se monta inclinado, hay que declararlo.
 - `modo_azimut` es opcional, por omisión "correcto" (ver docstring de
   `engine.calc`). Se acepta también "cuadrante", solo para diagnóstico.
 
@@ -155,6 +161,18 @@ def _evalua_luminario(
     except Exception as exc:  # noqa: BLE001
         raise ErrorEstudio(f"No se pudo interpretar el archivo .ies '{ruta.name}': {exc}") from exc
 
+    try:
+        inclinacion = float(dato_luminario.get("inclinacion", 0.0))
+    except (TypeError, ValueError) as exc:
+        raise ErrorEstudio(
+            f"La 'inclinacion' del luminario '{nombre_o_ruta}' no es un número: {exc}"
+        ) from exc
+    if not -90.0 < inclinacion < 90.0:
+        raise ErrorEstudio(
+            f"La 'inclinacion' del luminario '{nombre_o_ruta}' debe estar entre "
+            f"-90 y 90 grados; se recibió {inclinacion}"
+        )
+
     watts_sobrescritos = dato_luminario.get("watts")
     if watts_sobrescritos is not None:
         watts = float(watts_sobrescritos)
@@ -168,8 +186,8 @@ def _evalua_luminario(
                 "texto libre; indica 'watts' en la entrada para este luminario"
             )
 
-    malla = calc.calcula(v, foto, llf_total, modo)
-    comparacion_modos = calc.comparar_modos(v, foto, llf_total)
+    malla = calc.calcula(v, foto, llf_total, modo, inclinacion)
+    comparacion_modos = calc.comparar_modos(v, foto, llf_total, inclinacion)
 
     n_luminarios_tramo = _luminarios_por_tramo(v.disposicion)
     watts_conectados_tramo = watts * n_luminarios_tramo
@@ -192,6 +210,7 @@ def _evalua_luminario(
         "fabricante": foto.fabricante,
         "watts": watts,
         "origen_watts": origen_watts,
+        "inclinacion_grados": inclinacion,
         "n_luminarios_por_tramo": n_luminarios_tramo,
         "watts_conectados_tramo": watts_conectados_tramo,
         "dpea_w_m2": dpea_calculado,
@@ -242,6 +261,7 @@ def _barrido(
     v: Vialidad,
     fotos: List[Any],
     watts: List[float],
+    inclinaciones: List[float],
     llf_total: float,
     modo: str,
 ) -> Dict[str, Any]:
@@ -270,8 +290,8 @@ def _barrido(
             vv = Vialidad(v.num_carriles, v.ancho_carril, v.camellon, v.disposicion,
                           h, s_, v.retranqueo, v.largo_brazo)
             celda_m, celda_s = [], []
-            for foto in fotos:
-                m = calc.calcula(vv, foto, llf_total, modo)
+            for foto, incl in zip(fotos, inclinaciones):
+                m = calc.calcula(vv, foto, llf_total, modo, incl)
                 celda_m.append([round(x, 1) for fila in m.e for x in fila])
                 celda_s.append([m.promedio, m.minimo, m.maximo, m.uniformidad])
             fila_m.append(celda_m)
@@ -281,7 +301,7 @@ def _barrido(
         # Las X de la ventana evaluada dependen del interpostal; las Y no.
         vv = Vialidad(v.num_carriles, v.ancho_carril, v.camellon, v.disposicion,
                       v.altura_montaje, s_, v.retranqueo, v.largo_brazo)
-        m = calc.calcula(vv, fotos[0], llf_total, modo)
+        m = calc.calcula(vv, fotos[0], llf_total, modo, inclinaciones[0])
         xs_por_interpostal.append([round(x, 3) for x in m.xs])
 
     return {
@@ -344,6 +364,7 @@ def ejecuta(ruta_json: Path) -> Dict[str, Any]:
     fotos = [e[0] for e in evaluados]
     watts_lista = [e[1] for e in evaluados]
     resultados = [e[2] for e in evaluados]
+    inclinaciones = [r["inclinacion_grados"] for r in resultados]
 
     salida = {
         "entrada": str(ruta_json),
@@ -368,7 +389,7 @@ def ejecuta(ruta_json: Path) -> Dict[str, Any]:
         },
         "modo_azimut": modo,
         "resultados": resultados,
-        "barrido": _barrido(v, fotos, watts_lista, llf_total, modo),
+        "barrido": _barrido(v, fotos, watts_lista, inclinaciones, llf_total, modo),
         "recomendacion": resultados[0]["catalogo"] if resultados[0]["nom"]["cumple"] else None,
     }
     return salida

@@ -16,6 +16,10 @@ Los angulos, con el luminario en (xl, yl, H) y el punto de calculo en (xp, yp, 0
     C     = azimut en el plano horizontal, 0 = perpendicular a la vialidad,
             90 = a lo largo de la vialidad
 
+Con el luminario inclinado sobre el brazo (ver `_angulos`) hay dos gammas: el
+del eje del luminario, que es con el que se consulta la fotometria, y el
+geometrico, que es el que entra al cos^3. Con inclinacion 0 coinciden.
+
 AZIMUT
 ------
 El azimut se mide con
@@ -107,31 +111,71 @@ class Malla:
 
 
 def _angulos(xl: float, yl: float, orient: int, xp: float, yp: float,
-             h: float, modo: str) -> Tuple[float, float]:
-    """Devuelve (gamma, C) en grados para un luminario y un punto."""
+             h: float, modo: str, inclinacion: float = 0.0) -> Tuple[float, float, float]:
+    """Devuelve (gamma_geometrico, gamma_tabla, C_tabla) en grados.
+
+    Son DOS gammas y no uno porque el luminario puede estar inclinado, y
+    entonces cada uno responde una pregunta distinta:
+
+    * `gamma_tabla` y `C_tabla` se miden respecto al eje del luminario, que es
+      como esta medida la fotometria. Sirven para preguntarle al .ies cuanta
+      luz sale hacia ese punto.
+    * `gamma_geometrico` es el angulo real del rayo contra la vertical. Es el
+      que entra al cos^3 de la ley del cosseno, porque el pavimento no sabe
+      como quedo orientada la lampara.
+
+    Con inclinacion 0 los dos coinciden y esto se reduce al caso de siempre.
+    Es la estructura del VBA 1.8.1 (`IlluminanceAndLuminance.bas:218-222` y
+    `:583`), que `ESPEC_SEAD_ILUMINANCIA.md` habia registrado como posible bug
+    ("Ambiguedad A1") cuando el tilt todavia estaba muerto. No es un bug.
+    """
     dx = xp - xl
     # dy positivo = hacia el lado de la calle DE ESTE luminario
     dy = (yp - yl) * orient
     dist = math.hypot(dx, dy)
-    gamma = math.degrees(math.atan(dist / h)) if dist else 0.0
+    gamma_geo = math.degrees(math.atan(dist / h)) if dist else 0.0
+
+    # Rotacion al sistema del luminario (`angleGammaWithTilt` /
+    # `anglePhiWithTilt`, AngleCalculations.bas). La 1.8.1 solo gira sobre X
+    # -- el cabeceo del luminario sobre el brazo -- asi que los otros dos ejes
+    # de la matriz general quedan en cero y se simplifica a esto.
+    if inclinacion:
+        t = math.radians(inclinacion)
+        cos_t, sin_t = math.cos(t), math.sin(t)
+        x_p = dx
+        y_p = dy * cos_t - h * sin_t
+        h_p = dy * sin_t + h * cos_t
+    else:
+        x_p, y_p, h_p = dx, dy, h
+
+    r = math.hypot(x_p, y_p)
+    if h_p == 0:
+        gamma = 90.0
+    else:
+        gamma = math.degrees(math.atan(r / h_p))
+        if h_p < 0:
+            # el punto quedo por detras del plano del luminario inclinado
+            gamma += 180.0
 
     if modo == MODO_CUADRANTE:
         # plegado al cuadrante; ver la nota del docstring, no es el criterio de calculo
-        if dy == 0:
-            c = 90.0
-        else:
-            c = math.degrees(math.atan(abs(dx) / abs(dy)))
+        c = 90.0 if y_p == 0 else math.degrees(math.atan(abs(x_p) / abs(y_p)))
     else:
         # 0 = hacia la calzada, 180 = hacia la acera
-        c = math.degrees(math.atan2(abs(dx), dy))
-    return gamma, c
+        c = math.degrees(math.atan2(abs(x_p), y_p))
+    return gamma_geo, gamma, c
 
 
 def calcula(v: Vialidad, foto: Fotometria, llf: float,
-            modo: str = MODO_CORRECTO) -> Malla:
+            modo: str = MODO_CORRECTO, inclinacion: float = 0.0) -> Malla:
     """Iluminancia en cada punto de la ventana evaluada, en lux.
 
     `llf` es el factor total de perdidas (LLD * LDD * factor de balastro).
+
+    `inclinacion` es el cabeceo del luminario sobre el brazo, en grados;
+    positiva apunta hacia la calzada. Es propiedad del luminario y no de la
+    vialidad, igual que en el Excel (`FixtureData!selectedTilt`), asi que dos
+    luminarios de una misma corrida pueden traer inclinaciones distintas.
     """
     xs_todos = valores_x(v.interpostal)
     ys = valores_y(v.num_carriles, v.ancho_carril, v.camellon)
@@ -148,22 +192,24 @@ def calcula(v: Vialidad, foto: Fotometria, llf: float,
             # Todos los luminarios del tramo contribuyen; el metodo IES del
             # SEAD no aplica ningun corte por distancia.
             for xl, yl, orient in luminarios:
-                gamma, c = _angulos(xl, yl, orient, xp, yp, h, modo)
+                gamma_geo, gamma, c = _angulos(
+                    xl, yl, orient, xp, yp, h, modo, inclinacion)
                 intensidad = foto.intensidad(gamma, c)
-                cos_g = math.cos(math.radians(gamma))
+                cos_g = math.cos(math.radians(gamma_geo))
                 total += intensidad * cos_g ** 3 * llf / (h * h)
             fila.append(total)
         e.append(fila)
     return Malla(xs=xs, ys=ys, e=e, modo=modo)
 
 
-def comparar_modos(v: Vialidad, foto: Fotometria, llf: float) -> dict:
+def comparar_modos(v: Vialidad, foto: Fotometria, llf: float,
+                   inclinacion: float = 0.0) -> dict:
     """Compara el azimut de calculo contra el plegado al cuadrante.
 
     Herramienta de diagnostico. El reporte ya no la usa.
     """
-    a = calcula(v, foto, llf, MODO_CUADRANTE)
-    b = calcula(v, foto, llf, MODO_CORRECTO)
+    a = calcula(v, foto, llf, MODO_CUADRANTE, inclinacion)
+    b = calcula(v, foto, llf, MODO_CORRECTO, inclinacion)
     def dif(x, y):
         return 100.0 * (y - x) / x if x else float("nan")
     return {

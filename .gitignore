@@ -18,7 +18,8 @@ __pycache__/
 assets/
 
 
-# Salidas regenerables de cada estudio
-estudios/**/reporte.html
-estudios/**/malla.csv
-estudios/**/resultados.json
+# Los estudios son trabajo: llevan geometria y a veces nombre de calle de un
+# cliente concreto, y sus salidas son regenerables. Ninguno se versiona. El
+# formato de entrada.json esta documentado en el README y en engine/cli.py, que
+# es donde tiene que vivir para no depender de un caso de ejemplo.
+estudios/

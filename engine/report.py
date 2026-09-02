@@ -193,10 +193,16 @@ def _leyenda() -> str:
 
 
 def _fila(i: int, r: Dict[str, Any]) -> str:
-    """Fila de la tabla. Todos los numeros los rellena el script."""
+    """Fila de la tabla. Todos los numeros los rellena el script.
+
+    El nombre del luminario es un ancla de verdad --no un `onclick`-- para que
+    funcione sin JavaScript, se pueda abrir en otra pestana y el teclado la
+    alcance. El script hace clicable la fila entera encima de eso, que es lo
+    comodo con el raton, pero la fila no es el mecanismo: es el atajo.
+    """
     return (
         '<tr data-i="{i}">'
-        '<td class="modelo"><span class="mnombre">{modelo}</span>'
+        '<td class="modelo"><a class="mnombre" href="#lum-{i}">{modelo}</a>'
         '<span class="mfab">{fab}</span><span class="rec" hidden>recomendado</span></td>'
         '<td class="n" data-label="Potencia">{w}</td>'
         '<td class="n c-eprom" data-label="Eprom"></td>'
@@ -224,7 +230,7 @@ def _rotulo_inclinacion(r: Dict[str, Any]) -> str:
 
 def _detalle(i: int, r: Dict[str, Any], v: Vialidad, xs: List[float], ys: List[float]) -> str:
     return (
-        '<section class="detalle" data-i="{i}">'
+        '<section class="detalle" id="lum-{i}" data-i="{i}" tabindex="-1">'
         '<h3>{modelo} <span class="w">{w} W{extra}</span></h3>'
         '<div class="criterios"></div>'
         '<div class="mapa">{leyenda}{svg}</div>'
@@ -383,6 +389,22 @@ thead th{
   background:var(--surface-2); white-space:nowrap;
 }
 tbody tr:last-child td{border-bottom:none}
+#comparativa tr{cursor:pointer}
+#comparativa tr:hover{background:var(--surface-2)}
+#comparativa tr:focus-within{outline:2px solid var(--slate); outline-offset:-2px}
+a.mnombre{color:inherit; text-decoration:none}
+a.mnombre:hover{text-decoration:underline}
+/* El destino del salto se marca un momento: sin esto el navegador te deja en
+   otro sitio de la pagina y no queda claro a cual de los luminarios llegaste. */
+.detalle{outline:none; scroll-margin-top:18px; position:relative}
+.detalle:target::before,.detalle.visto::before{
+  content:""; position:absolute; left:-14px; top:-4px; bottom:-4px; width:3px;
+  background:var(--amber); border-radius:2px;
+}
+@media print{
+  #comparativa tr{cursor:auto}
+  .detalle:target::before,.detalle.visto::before{display:none}
+}
 td.n{font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; text-align:right; white-space:nowrap}
 th.n{text-align:right}
 .modelo{min-width:190px}
@@ -710,6 +732,33 @@ JS = r"""
     var cs = document.querySelector('.cota-s text');
     if (cs) cs.textContent = fmt(S, 2) + ' m entre postes';
   }
+
+  // La fila entera lleva al detalle. El ancla del nombre ya lo hace sola; esto
+  // solo amplia el area sensible al resto de la fila, asi que se ignora el
+  // clic sobre el propio enlace para no navegar dos veces, y se respeta el
+  // clic con modificador (abrir en otra pestana) y la seleccion de texto.
+  filas.forEach(function(f){
+    f.addEventListener('click', function(ev){
+      if (ev.target.closest('a')) return;
+      if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.button !== 0) return;
+      if (String(window.getSelection())) return;
+      var a = f.querySelector('a.mnombre');
+      if (a) a.click();
+    });
+  });
+
+  // Al llegar a un detalle se le deja una marca un momento: el salto sin
+  // acuse deja al lector sin saber en cual de los luminarios cayo.
+  window.addEventListener('hashchange', marca);
+  function marca(){
+    detalles.forEach(function(x){ x.classList.remove('visto'); });
+    if (!/^#lum-\d+$/.test(location.hash)) return;
+    var d = document.querySelector(location.hash);
+    if (!d) return;
+    d.classList.add('visto');
+    setTimeout(function(){ d.classList.remove('visto'); }, 1600);
+  }
+  marca();
 
   document.getElementById('imprimir').addEventListener('click', function(){
     window.print();

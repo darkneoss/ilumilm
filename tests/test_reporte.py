@@ -95,3 +95,17 @@ def test_en_central_doble_no_se_finge_un_retranqueo(html):
     invitaria a creer que se uso."""
     assert "no aplica (poste central)" in html
     assert "Brazos desde el eje del camellón" in html
+
+
+def test_cada_fila_de_la_comparativa_apunta_a_su_detalle(html):
+    """La fila lleva al detalle con un ancla de verdad, no con un `onclick`:
+    asi funciona sin JavaScript, se puede abrir en otra pestana y el teclado la
+    alcanza. El script solo amplia el area sensible al resto de la fila.
+
+    Se comprueban los dos extremos del salto porque un `href` sin destino no
+    falla a la vista: simplemente no lleva a ningun lado.
+    """
+    destinos = re.findall(r'<a class="mnombre" href="#(lum-\d+)"', html)
+    anclas = re.findall(r'<section class="detalle" id="(lum-\d+)"', html)
+    assert destinos, "ninguna fila enlaza a su detalle"
+    assert destinos == anclas

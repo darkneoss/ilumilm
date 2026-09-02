@@ -169,64 +169,6 @@ def _angulos(xl: float, yl: float, orient: int, xp: float, yp: float,
     return gamma_geo, gamma, c
 
 
-GAMMAS_DESLUMBRAMIENTO = (70.0, 80.0, 90.0)
-
-
-def intensidad_maxima_instalada(foto: Fotometria, gamma: float,
-                                inclinacion: float = 0.0,
-                                paso_c: float = 1.0) -> tuple:
-    """Intensidad maxima a `gamma` grados de la vertical, YA MONTADO.
-
-    Devuelve (candelas, azimut en grados). El azimut se mide como el C del
-    calculo: 0 hacia la calzada, 90 a lo largo de la vialidad, 180 hacia la
-    acera.
-
-    La diferencia con `Fotometria.intensidad_maxima_en` es de que vertical se
-    habla. La fotometria esta medida respecto al eje del luminario; una tabla
-    de control de deslumbramiento se lee respecto a la vertical del terreno.
-    Con el luminario cabeceado sobre el brazo las dos verticales no coinciden,
-    y entonces "la intensidad a 70 grados" son dos numeros distintos. El que
-    importa para juzgar el deslumbramiento es este: cuanta luz sale en la
-    direccion que de verdad va a dar en los ojos de alguien.
-
-    Con inclinacion 0 se reduce a barrer los planos C a ese gamma.
-    """
-    if not inclinacion:
-        return foto.intensidad_maxima_en(gamma)
-
-    t = math.radians(inclinacion)
-    cos_t, sin_t = math.cos(t), math.sin(t)
-    # Direccion con angulo vertical `gamma` respecto al terreno: se toma una
-    # altura unitaria y se mide el alcance horizontal que le corresponde.
-    alcance = math.tan(math.radians(gamma)) if gamma < 90.0 else float("inf")
-
-    mejor, mejor_c = -1.0, 0.0
-    n = max(1, int(round(180.0 / paso_c)))
-    for k in range(n + 1):
-        c = k * 180.0 / n
-        if alcance == float("inf"):
-            # rayo horizontal: no hay componente vertical que rotar
-            dx, dy, h = math.sin(math.radians(c)), math.cos(math.radians(c)), 0.0
-        else:
-            dx = alcance * math.sin(math.radians(c))
-            dy = alcance * math.cos(math.radians(c))
-            h = 1.0
-        y_p = dy * cos_t - h * sin_t
-        h_p = dy * sin_t + h * cos_t
-        r = math.hypot(dx, y_p)
-        if h_p == 0:
-            g_p = 90.0
-        else:
-            g_p = math.degrees(math.atan(r / h_p))
-            if h_p < 0:
-                g_p += 180.0
-        c_p = math.degrees(math.atan2(abs(dx), y_p))
-        i = foto.intensidad(g_p, c_p)
-        if i > mejor:
-            mejor, mejor_c = i, c
-    return mejor, mejor_c
-
-
 def calcula(v: Vialidad, foto: Fotometria, llf: float,
             modo: str = MODO_CORRECTO, inclinacion: float = 0.0) -> Malla:
     """Iluminancia en cada punto de la ventana evaluada, en lux.

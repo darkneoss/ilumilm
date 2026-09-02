@@ -212,17 +212,6 @@ def _evalua_luminario(
             )
 
     flujo, origen_flujo = foto.flujo_luminario()
-    # Maximos de intensidad sobre la horizontal, en la posicion instalada. La
-    # NOM-013 no los pide; van al reporte porque son el dato con el que se
-    # juzga el control de la luz que se escapa hacia los ojos.
-    intensidades = {}
-    for g in calc.GAMMAS_DESLUMBRAMIENTO:
-        cd, azimut = calc.intensidad_maxima_instalada(foto, g, inclinacion)
-        intensidades["{:g}".format(g)] = {
-            "cd": cd,
-            "cd_por_klm": (cd / (flujo / 1000.0)) if flujo > 0 else None,
-            "azimut_grados": azimut,
-        }
 
     malla = calc.calcula(v, foto, llf_total, modo, inclinacion)
     comparacion_modos = calc.comparar_modos(v, foto, llf_total, inclinacion)
@@ -251,7 +240,6 @@ def _evalua_luminario(
         "inclinacion_grados": inclinacion,
         "flujo_lm": flujo,
         "origen_flujo": origen_flujo,
-        "intensidades_max": intensidades,
         "n_luminarios_por_tramo": n_luminarios_tramo,
         "watts_conectados_tramo": watts_conectados_tramo,
         "dpea_w_m2": dpea_calculado,

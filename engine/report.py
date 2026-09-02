@@ -211,51 +211,29 @@ def _fila(i: int, r: Dict[str, Any]) -> str:
 def _fotometria(res: Sequence[Dict[str, Any]]) -> str:
     """Tabla de los datos que salen del .ies, no del calculo.
 
-    Las intensidades maximas a 70, 80 y 90 grados de la vertical son el dato
-    con el que se juzga cuanta luz se escapa hacia los ojos de quien circula.
-    La NOM-013 no las pide --sus tres criterios son iluminancia, uniformidad y
-    DPEA-- pero sin ellas el reporte no dice nada de la luz que no cae en el
-    pavimento, y esa es la que molesta.
+    Aqui NO van las intensidades maximas sobre la horizontal (los cd/klm con
+    que los fabricantes declaran el control del deslumbramiento). Estuvieron un
+    rato y se quitaron: son candelas, la unica unidad del reporte que el motor
+    no maneja en ninguna otra parte, no son criterio de la NOM-013 --que evalua
+    iluminancia, uniformidad y DPEA-- y no habia forma de contrastarlas contra
+    la herramienta de referencia. Un numero que nadie puede verificar y que no
+    decide nada solo le quita peso a los que si deciden.
     """
     filas = []
     for r in res:
-        im = r.get("intensidades_max") or {}
-        celdas = []
-        for g in ("70", "80", "90"):
-            d = im.get(g)
-            celdas.append("—" if not d or d.get("cd_por_klm") is None
-                          else _num(d["cd_por_klm"], 0))
         flujo = r.get("flujo_lm")
         filas.append(
             "<tr><td>{cat}</td><td>{fab}</td><td class='n'>{w}</td>"
-            "<td class='n'>{fl}</td><td class='n'>{c70}</td>"
-            "<td class='n'>{c80}</td><td class='n'>{c90}</td></tr>".format(
+            "<td class='n'>{fl}</td><td>{org}</td></tr>".format(
                 cat=escape(r["catalogo"]), fab=escape(r.get("fabricante") or "—"),
                 w=_num(r["watts"], 1),
                 fl="—" if not flujo else _num(flujo, 0),
-                c70=celdas[0], c80=celdas[1], c90=celdas[2]))
+                org=escape(r.get("origen_flujo") or "—")))
     return (
         '<div class="tablabox"><table><thead><tr>'
         "<th>Luminario</th><th>Fabricante</th><th class='n'>W</th>"
-        "<th class='n'>Flujo lm</th>"
-        "<th class='n'>I 70° cd/klm</th><th class='n'>I 80° cd/klm</th>"
-        "<th class='n'>I 90° cd/klm</th>"
+        "<th class='n'>Flujo lm</th><th>Origen del flujo</th>"
         "</tr></thead><tbody>{}</tbody></table></div>".format("".join(filas))
-        # OJO: aqui NO va la clase `.notas`. Esa es para un contenedor --es un
-        # flex column-- y aplicada a un parrafo parte cada <strong> en su
-        # propia linea.
-        + '<p class="nota-foto">Las intensidades son el máximo en todas '
-        "las direcciones que forman ese ángulo con la vertical del terreno, ya "
-        "con el luminario montado: si el brazo va inclinado, esa vertical no es "
-        "el eje del luminario y los dos ángulos dejan de coincidir. Se "
-        "normalizan por el flujo del luminario, declarado en el propio archivo "
-        "fotométrico o integrado de la distribución cuando el archivo es de "
-        "fotometría absoluta. <strong>La NOM-013 no evalúa "
-        "deslumbramiento.</strong> Van aquí porque son lo único que este "
-        "reporte puede decir sobre la luz que no cae en el pavimento; no "
-        "equivalen a la clase D de la EN 13201 ni tienen por qué coincidir al "
-        "dígito con lo que imprime otra herramienta, que no documenta su "
-        "convención.</p>"
     )
 
 
@@ -399,8 +377,6 @@ header .sub{color:var(--ink-2); margin-top:10px}
 .plan h3{font-size:14px; font-weight:650; color:var(--ink-2); margin-top:8px}
 .plan h3:first-of-type{margin-top:0}
 .plan table{min-width:560px}
-.nota-foto{font-size:13px; color:var(--ink-2); max-width:var(--medida)}
-.nota-foto strong{color:var(--ink)}
 
 .tablabox{overflow-x:auto; border:1px solid var(--line); border-radius:6px; background:var(--surface)}
 table{border-collapse:collapse; width:100%; min-width:720px; color:var(--ink)}

@@ -175,10 +175,16 @@ clasificación, y esa no se deduce de la geometría.
 ## El reporte
 
 Abre con **Datos de planificación**: el perfil de la vía, la disposición de los
-luminarios y la fotometría de cada uno, incluidas las intensidades máximas a
-70°, 80° y 90° de la vertical del terreno —el único dato que este reporte puede
-dar sobre la luz que no cae en el pavimento—. La NOM-013 no evalúa
-deslumbramiento, así que van como información y no como criterio.
+luminarios y la fotometría de cada uno (fabricante, potencia y flujo luminoso,
+con el origen del flujo, que sale declarado del `.ies` o integrado de la
+distribución cuando el archivo es de fotometría absoluta).
+
+No lleva las intensidades máximas sobre la horizontal —los `cd/klm` con que los
+fabricantes declaran el control del deslumbramiento—. Estuvieron un rato y se
+quitaron: son candelas, la única unidad que el motor no maneja en ninguna otra
+parte, no son criterio de la NOM-013 y no había forma de contrastarlas contra la
+herramienta de referencia. Un número que nadie puede verificar y que no decide
+nada solo le quita peso a los tres que sí deciden.
 
 Ese bloque lleva **solo lo que los controles no mueven**. La interpostal y la
 altura de montaje quedan fuera a propósito: son deslizadores, y un bloque de

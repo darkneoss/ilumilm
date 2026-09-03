@@ -3,8 +3,8 @@
 Qué es el proyecto está en [`README.md`](README.md). Esto es lo otro: lo que un
 agente haría mal si nadie se lo dice.
 
-*(Este archivo lo leen Claude Code, Hermes y otros entornos. `CLAUDE.md` apunta
-aquí para no mantener dos.)*
+*(Este archivo lo leen Claude Code, Hermes y otros entornos, que es la razón
+del nombre: el motor no está atado a ninguno.)*
 
 > **In English.** These are project rules for coding agents, kept in Spanish
 > because they are inseparable from the code they govern: they point at Spanish

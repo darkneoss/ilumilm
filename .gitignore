@@ -23,3 +23,9 @@ assets/
 # formato de entrada.json esta documentado en el README y en engine/cli.py, que
 # es donde tiene que vivir para no depender de un caso de ejemplo.
 estudios/
+
+
+# La skill SI se versiona: es parte del producto, no configuracion. Lo que no
+# es del proyecto son los permisos y ajustes que Claude Code escribe por
+# maquina; ese archivo aparece solo la primera vez que se acepta un permiso.
+.claude/settings.local.json

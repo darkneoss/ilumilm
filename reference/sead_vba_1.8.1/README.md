@@ -1,5 +1,10 @@
 # VBA del SEAD Street Lighting Tool v1.8.1
 
+> Material de terceros. La herramienta es de la iniciativa SEAD (Clean Energy
+> Ministerial) y sus macros las desarrolló p2w2. Ver
+> [`reference/PROCEDENCIA.md`](../PROCEDENCIA.md) para la atribución completa y
+> los términos en que se incluye.
+
 **Esta es la versión de referencia del motor.** Es la que generó todos los
 estudios reales de `assets/estudios/`, así que es contra este código contra el
 que se contrasta `engine/`.

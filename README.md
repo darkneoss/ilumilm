@@ -7,6 +7,20 @@ Sustituye a una herramienta Excel heredada, que solo corre en Office de 32
 bits. Este motor corre en cualquier Python 3.10 o superior, **sin
 dependencias externas** — solo biblioteca estándar.
 
+> **In English.** ilumilm is a street lighting calculator: it reads IES
+> photometric files, computes point-by-point illuminance over the roadway using
+> the IES method, and checks the result against **NOM-013-ENER-2013**, the
+> Mexican energy efficiency standard for public lighting. It is a faithful
+> reimplementation of the SEAD Street Lighting Tool's calculation engine,
+> validated to 0.008 % against 24 real runs of that tool.
+>
+> **The code, the terminology and the output are in Spanish on purpose.** The
+> standard is Mexican, the report is a deliverable that Mexican clients and
+> verification units read, and terms like *interpostal*, *retranqueo*,
+> *camellón* or *DPEA* are the standard's own vocabulary — translating them
+> would lose precision for the only audience that uses this. See
+> `reference/PROCEDENCIA.md` for third-party material and attribution.
+
 ## Estado de validación
 
 Contrastado contra 24 corridas reales de la herramienta que reemplaza, trece de
@@ -293,3 +307,24 @@ si el motor estuviera roto.
 `tools/` sí usa dependencias externas (`olefile`, `xlrd`, `openpyxl`), pero solo
 hacen falta para regenerar el material de `reference/` a partir de los archivos
 de Excel originales.
+
+---
+
+## Licencia y procedencia
+
+El código propio —`engine/`, `tools/`, `tests/`, la documentación y la skill—
+está bajo **licencia MIT** ([`LICENSE`](LICENSE)).
+
+El repositorio incluye además material de terceros, acreditado y separado en
+[`reference/PROCEDENCIA.md`](reference/PROCEDENCIA.md):
+
+- **El código VBA de la SEAD Street Lighting Tool** (`reference/sead_vba_*`),
+  de la iniciativa SEAD del Clean Energy Ministerial, desarrollado por p2w2. Es
+  la herramienta que este proyecto sustituye, y está aquí para que el port se
+  pueda auditar contra su original línea por línea. No declara licencia; la
+  nota de procedencia explica en qué términos se incluye.
+- **Las fotometrías `.ies` de `catalogo/`**, de Construlita Lighting
+  International, publicadas por el fabricante para usarse en software de diseño.
+
+La NOM-013-ENER-2013 no se incluye: `engine/nom.py` solo contiene sus tablas de
+valores, que son datos normativos de aplicación obligatoria.

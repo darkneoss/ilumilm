@@ -1,6 +1,6 @@
 ---
 name: estudio-iluminacion
-description: Use when the user wants a street/roadway lighting study, photometric calculation, or NOM-013-ENER-2013 compliance check for public lighting (alumbrado público). Computes point-by-point illuminance from .ies photometric files, evaluates Eprom, uniformity and DPEA against the norm, and publishes an HTML report. Triggers on "estudio de iluminación", "alumbrado público", "NOM-013", "cumple la norma", "archivo IES", "luminario vial", "DPEA", "sustitución de luminarios", "memoria de cálculo".
+description: Use when the user wants a street/roadway lighting study, photometric calculation, or NOM-013-ENER-2013 compliance check for public lighting (alumbrado público). Computes point-by-point illuminance from .ies photometric files, evaluates Eprom, uniformity and DPEA against the norm, and generates a self-contained HTML report. Triggers on "estudio de iluminación", "alumbrado público", "NOM-013", "cumple la norma", "archivo IES", "luminario vial", "DPEA", "sustitución de luminarios", "memoria de cálculo".
 ---
 
 # Estudio de iluminación vial (NOM-013-ENER-2013)
@@ -46,6 +46,15 @@ siempre los valores por omisión, que cubren el caso típico.
   nada. El motor no tiene un multiplicador aparte para eso y declararlo da
   error, a propósito (ver `README.md`).
 
+## Qué necesita el entorno
+
+Ejecutar comandos de shell, leer y escribir archivos, y **Python 3.10 o
+superior**. Nada más: el motor no tiene dependencias externas. Toda la
+inteligencia vive en la línea de comandos, no en esta skill, así que cualquier
+agente que pueda correr `python -m engine.cli` puede conducir un estudio
+completo. `tools/pdf.py` es la única excepción y es opcional: necesita
+Playwright con Chromium.
+
 ## Cómo correrlo
 
 1. **Catálogo.** `python -m engine.catalogo` lista los `.ies` ya indexados en
@@ -66,7 +75,10 @@ siempre los valores por omisión, que cubren el caso típico.
    → `malla.csv` y `resultados.json` junto al archivo de entrada.
 
 5. **Reporte.** `python -m engine.report estudios/<nombre>/resultados.json`
-   → `reporte.html`. Publícalo con la herramienta Artifact y entrega el enlace.
+   → `reporte.html`, autocontenido y listo para abrirse en cualquier navegador.
+   Si tu entorno sabe publicar páginas —en Claude Code, la herramienta
+   Artifact—, publícalo y entrega el enlace; si no, entrega la ruta del archivo.
+   El entregable es el HTML; publicarlo es una comodidad, no un requisito.
 
 ## Lo que hay que decirle al usuario, siempre
 
@@ -78,11 +90,9 @@ Tres advertencias que el reporte ya incluye, pero que conviene no enterrar:
   la Unidad de Verificación mide en campo. Sirve para decidir la sustitución,
   no para sustituir la verificación.
 
-- **Tresbolillo y bilateral opuesta no están validadas.** No aparecen en
-  ninguno de los estudios de referencia disponibles. Comparten la ruta de código
-  con central doble, que sí quedó validada, pero eso es un argumento de
-  construcción, no una medición. Avísale al usuario si su estudio usa una de
-  esas dos disposiciones.
+- **Dos luminarios por poste no está soportado** fuera de central doble, y
+  declararlo da error a propósito. Las cuatro disposiciones de la NOM sí están
+  validadas contra medición, así que de eso no hay que advertir nada.
 
 - **El DPEA depende de la disposición.** Los watts conectados por tramo
   interpostal son 1 luminario en unilateral y 2 en las demás disposiciones.

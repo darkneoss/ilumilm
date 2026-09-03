@@ -10,7 +10,9 @@ estudios reales de `assets/estudios/`, así que es contra este código contra el
 que se contrasta `engine/`.
 
 Extraído de `assets/SEAD Street Lighting TOOL.xlsm` (stream `xl/vbaProject.bin`)
-con la descompresión MS-OVBA de `tools/extract_vba.py`. La hoja `Versions` del
+con la descompresión MS-OVBA de `tools/extract_vba.py`. Solo están los 7 módulos
+del cálculo que el port cita; el resto --interfaz, gráficas, traducción-- no se
+redistribuye, y el árbol completo se regenera con ese mismo script. La hoja `Versions` del
 libro llega hasta la 1.8.1 («IES uploaded fixes»).
 
 `reference/sead_vba_1.7.6/` conserva la versión anterior, extraída del `.xls`.

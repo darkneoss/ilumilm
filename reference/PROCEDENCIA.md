@@ -12,9 +12,18 @@ está bajo licencia MIT, ver [`LICENSE`](../LICENSE).
 ## 1. SEAD Street Lighting Tool — el VBA de `sead_vba_1.7.6/` y `sead_vba_1.8.1/`
 
 **Qué es.** El código fuente Visual Basic de la *SEAD Street Lighting Tool*, la
-herramienta Excel que este proyecto sustituye. Son 126 módulos `.bas` en dos
-versiones: la 1.7.6, extraída del `.xls`, y la **1.8.1, que es la que generó
-todas las corridas de referencia** contra las que se validó el motor.
+herramienta Excel que este proyecto sustituye, en dos versiones: la 1.7.6,
+extraída del `.xls`, y la **1.8.1, que es la que generó todas las corridas de
+referencia** contra las que se validó el motor.
+
+**Solo el cálculo.** De los ~63 módulos de cada versión se conservan los **7
+que el port y las especificaciones citan**: `ReadISO`,
+`IlluminanceAndLuminance`, `AngleCalculations`, `MakeMeasurementGrid`,
+`FixturePositions`, `LuminanceIntensity` y `FixtureCalcs`. Los otros son barras
+de progreso, impresión de gráficas, traducción, formularios y manejadores de
+eventos de hoja: la aplicación de Excel, no el algoritmo. Se redistribuye lo que
+se reimplementó y lo que hace falta para auditarlo, nada más. El árbol completo
+se regenera con `tools/extract_vba.py` desde el libro original.
 
 **Quién lo hizo.** La herramienta es de la iniciativa **SEAD**
 (*Super-efficient Equipment and Appliance Deployment*), del Clean Energy
@@ -23,6 +32,14 @@ encabezado la autoría explícita:
 
 > `'This macro was developed by p2w2.  http://p2w2.com/`
 > `'Please contact at CS@perceptive-analytics.com in case of any enquiry`
+
+**Por qué están las dos versiones.** Las especificaciones
+(`ESPEC_SEAD_IES.md`, `ESPEC_SEAD_ILUMINANCIA.md`) citan 109 números de línea
+de la **1.7.6**, y en la 1.8.1 esas líneas ya no corresponden: la mitad de los
+módulos cambió entre versiones. Además esos documentos describen el
+comportamiento de la 1.7.6 —donde la inclinación del luminario está muerta en
+el cálculo—, que en la 1.8.1 es falso. Sin la 1.7.6 quedarían 109 citas
+apuntando a nada.
 
 **Por qué está aquí.** El valor entero de este proyecto es reproducir los
 números de esa herramienta: los estudios que ya se entregaron con ella tienen

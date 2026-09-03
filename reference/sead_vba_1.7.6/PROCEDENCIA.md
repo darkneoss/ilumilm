@@ -4,6 +4,9 @@ Material de terceros. Ver [`reference/PROCEDENCIA.md`](../PROCEDENCIA.md) para
 la atribución completa y los términos.
 
 Extraído de `assets/SEAD street lighting tool.xls` con `tools/extract_vba.py`.
+Solo están los 7 módulos del cálculo que citan las especificaciones; el resto
+--interfaz, gráficas, traducción-- no se redistribuye. El árbol completo se
+regenera con ese mismo script.
 La herramienta es de la iniciativa SEAD (Clean Energy Ministerial) y sus macros
 las desarrolló p2w2.
 

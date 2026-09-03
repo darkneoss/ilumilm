@@ -3,16 +3,19 @@
 Estudios de iluminación vial y evaluación de cumplimiento de la
 **NOM-013-ENER-2013** a partir de archivos fotométricos `.ies`.
 
-Sustituye a una herramienta Excel heredada, que solo corre en Office de 32
-bits. Este motor corre en cualquier Python 3.10 o superior, **sin
-dependencias externas** — solo biblioteca estándar.
+Sustituye a una herramienta Excel heredada: un libro con macros que exige
+Excel, permisos de macros y capturar cada estudio a mano en la interfaz. Este
+motor corre en cualquier Python 3.10 o superior, **sin dependencias externas**
+—solo biblioteca estándar—, se puede automatizar, y entrega un reporte que se
+comparte por enlace en vez de por archivo adjunto.
 
 > **In English.** ilumilm is a street lighting calculator: it reads IES
 > photometric files, computes point-by-point illuminance over the roadway using
 > the IES method, and checks the result against **NOM-013-ENER-2013**, the
 > Mexican energy efficiency standard for public lighting. It is a faithful
 > reimplementation of the SEAD Street Lighting Tool's calculation engine,
-> validated to 0.008 % against 24 real runs of that tool.
+> validated to 0.008 % against 24 real runs of that tool. No Excel, no
+> dependencies beyond the standard library.
 >
 > **The code, the terminology and the output are in Spanish on purpose.** The
 > standard is Mexican, the report is a deliverable that Mexican clients and

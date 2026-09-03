@@ -289,6 +289,7 @@ estudios/<nombre>/   entrada.json y salidas (no se versiona: es trabajo)
 reference/           VBA extraído del Excel (v1.8.1 es la de referencia,
                      v1.7.6 se conserva por las citas de las especificaciones),
                      especificaciones y validación
+AGENTS.md            instrucciones para agentes que trabajen en el repositorio
 tools/               extracción del VBA y de los casos de regresión
 tests/               NOM + regresión contra las corridas de referencia
 ```

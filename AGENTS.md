@@ -6,6 +6,15 @@ agente haría mal si nadie se lo dice.
 *(Este archivo lo leen Claude Code, Hermes y otros entornos. `CLAUDE.md` apunta
 aquí para no mantener dos.)*
 
+> **In English.** These are project rules for coding agents, kept in Spanish
+> because they are inseparable from the code they govern: they point at Spanish
+> docstrings, at `RAREZA SEAD` markers in the source and at Spanish reference
+> documents. Anyone —or any agent— able to act on these rules is reading Spanish
+> anyway. The short version: **this engine's job is to reproduce the numbers of
+> the Excel tool it replaces, quirks included, not to improve on them.** Do not
+> "fix" anything marked `RAREZA SEAD`, and never relax a test tolerance to make
+> a case pass.
+
 ## La regla que manda sobre todas
 
 **El objetivo es reproducir los números de la herramienta que se sustituye, no

@@ -27,7 +27,10 @@ siempre los valores por omisión, que cubren el caso típico.
 
 **Clasificación y pavimento**
 - una de las 7 clasificaciones de la NOM (ver `engine/nom.py`)
-- pavimento: **R2 por omisión**, salvo que el usuario indique otra cosa
+- pavimento: **R2 por omisión**, salvo que el usuario indique otra cosa. Si no
+  lo tiene confirmado, dale el estudio con R2 y dile que en el reporte puede
+  probar los otros tres sin volver a calcular: el pavimento solo cambia la
+  tabla de umbrales, no la física.
 
 **Pérdidas y luminarios**
 - LLD (depreciación de lúmenes) **0.85**, LDD (suciedad) **0.90**, BF **1.0** para LED

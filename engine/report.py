@@ -315,6 +315,18 @@ header .sub{color:var(--ink-2); margin-top:10px}
 }
 .reset:focus-visible{outline:2px solid var(--slate); outline-offset:2px}
 .controles{display:grid; gap:20px 32px; grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+/* Clasificacion y pavimento comparten celda: son la misma pregunta --contra que
+   tabla de la norma se juzga-- y ademas el pavimento es una etiqueta de dos
+   caracteres, que como columna propia deja un hueco y separa a los dos
+   deslizadores, que se leen mejor juntos. */
+.ctrl.ctrl-par{flex-direction:row; gap:16px; align-items:flex-end}
+.ctrl-par .sub{display:flex; flex-direction:column; gap:6px; min-width:0; flex:0 1 420px}
+.ctrl-par .sub-pav{flex:none; width:96px}
+/* En cuanto la rejilla tiene mas de una columna, la pareja ocupa la fila
+   entera: los nombres de las clasificaciones son largos y en media columna se
+   cortan, y asi quedan los dos selectores arriba y los dos deslizadores abajo,
+   que es como se leen. */
+@media (min-width:640px){ .ctrl.ctrl-par{grid-column:1 / -1} }
 .ctrl{display:flex; flex-direction:column; gap:6px; min-width:0}
 .ctrl-cab{display:flex; align-items:baseline; justify-content:space-between; gap:12px; min-height:20px}
 .ctrl label{
@@ -326,6 +338,7 @@ header .sub{color:var(--ink-2); margin-top:10px}
   color:var(--ink);
 }
 .ctrl output.movido{color:var(--amber-txt)}
+.ctrl select.movido{border-color:var(--amber); color:var(--amber-txt)}
 .ctrl select{
   font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:15px;
   background:var(--surface-2); color:var(--ink); border:1px solid var(--line);
@@ -574,6 +587,7 @@ JS = r"""
 
   // --- controles --------------------------------------------------------
   var selC = document.getElementById('clasif');
+  var selP = document.getElementById('pav');
   var rgS  = document.getElementById('interpostal');
   var rgH  = document.getElementById('altura');
   var outS = document.getElementById('vInterpostal');
@@ -623,7 +637,7 @@ JS = r"""
 
   function pinta(){
     var S = B.interpostales[iS], H = B.alturas[iH];
-    var req = REQ[selC.value];
+    var req = REQ[selP.value][selC.value];
     var area = B.ancho_sin_camellon * S;
     var mejor = -1, mejorW = Infinity, cumplen = 0;
 
@@ -631,7 +645,16 @@ JS = r"""
     outH.textContent = fmt(H, 2) + ' m';
     outS.classList.toggle('movido', iS !== B.i_interpostal_estudio);
     outH.classList.toggle('movido', iH !== B.i_altura_estudio);
-    var movido = (iS !== B.i_interpostal_estudio) || (iH !== B.i_altura_estudio);
+    // Los cuatro controles cuentan, no solo los deslizadores: cambiar el
+    // pavimento o la clasificacion tambien deja la pantalla diciendo algo
+    // distinto del estudio que se guardo, y el aviso existe justo para que
+    // nadie lea un veredicto creyendo que es el del estudio.
+    var otroC = selC.value !== B.clasificacion_estudio;
+    var otroP = selP.value !== B.pavimento_estudio;
+    selC.classList.toggle('movido', otroC);
+    selP.classList.toggle('movido', otroP);
+    var movido = (iS !== B.i_interpostal_estudio) || (iH !== B.i_altura_estudio) ||
+                 otroC || otroP;
     aviso.hidden = !movido;
     reset.hidden = !movido;
 
@@ -683,6 +706,7 @@ JS = r"""
     // contra que umbrales se juzgo ni con que geometria se calculo.
     document.getElementById('cfgprint').innerHTML = [
       ['Clasificación de vialidad', selC.options[selC.selectedIndex].text],
+      ['Pavimento', selP.options[selP.selectedIndex].text],
       ['Distancia interpostal', fmt(S, 2) + ' m'],
       ['Altura de montaje', fmt(H, 2) + ' m']
     ].map(function(kv){
@@ -767,9 +791,12 @@ JS = r"""
   rgS.addEventListener('input', function(){ iS = +rgS.value; pinta(); });
   rgH.addEventListener('input', function(){ iH = +rgH.value; pinta(); });
   selC.addEventListener('change', pinta);
+  selP.addEventListener('change', pinta);
   reset.addEventListener('click', function(){
     iS = B.i_interpostal_estudio; iH = B.i_altura_estudio;
-    rgS.value = iS; rgH.value = iH; pinta();
+    rgS.value = iS; rgH.value = iH;
+    selC.value = B.clasificacion_estudio; selP.value = B.pavimento_estudio;
+    pinta();
   });
   pinta();
 })();
@@ -789,15 +816,30 @@ def html(datos: Dict[str, Any]) -> str:
 
     # Umbrales de las 7 clasificaciones, ya resueltos para este ancho de
     # calzada. El ancho no cambia con ningun control, asi que basta un numero.
+    # Los umbrales de las CUATRO tablas de pavimento, no solo la del estudio.
+    # El pavimento no toca la fisica --el calculo de iluminancia no lo usa- asi
+    # que, igual que la clasificacion, se puede mover en el navegador. Lo que
+    # cambia son los tres umbrales a la vez: el R1 refleja mas y por eso exige
+    # menos lux, menos potencia y la misma uniformidad.
     req = {
-        clave: {
-            "eprom_min": r.iluminancia_minima_promedio_lx,
-            "unif_max": r.uniformidad_maxima,
-            "dpea_max": nom.dpea_maximo(r, ancho),
+        pav: {
+            clave: {
+                "eprom_min": r.iluminancia_minima_promedio_lx,
+                "unif_max": r.uniformidad_maxima,
+                "dpea_max": nom.dpea_maximo(r, ancho),
+            }
+            for clave, r in tabla_pav.items()
         }
-        for clave, r in tabla.items()
+        for pav, tabla_pav in nom.TABLAS_POR_PAVIMENTO.items()
     }
     lum = [{"cat": r["catalogo"], "w": r["watts"]} for r in res]
+
+    opciones_pav = "".join(
+        '<option value="{}"{}>{}</option>'.format(
+            escape(clave), " selected" if clave == pavimento else "",
+            escape(nom.ETIQUETAS_PAVIMENTO.get(clave, clave)))
+        for clave in nom.TABLAS_POR_PAVIMENTO
+    )
 
     sel_actual = n["clasificacion_vialidad"]
     opciones = "".join(
@@ -838,7 +880,6 @@ def html(datos: Dict[str, Any]) -> str:
         ("Camellón", "{} m".format(_num(v["camellon"], 2))),
         ("Ancho total de la sección", "{} m".format(_num(v["ancho_calzada"], 2))),
         ("Ancho para el DPEA", "{} m".format(_num(ancho, 2))),
-        ("Pavimento", escape(pavimento)),
         ("Factor de mantenimiento", "{} × {} × {} = {}".format(
             _num(p["lld"], 2), _num(p["ldd"], 2), _num(p["bf"], 2),
             _num(p["llf_total"], 3))),
@@ -933,9 +974,15 @@ def html(datos: Dict[str, Any]) -> str:
       <button class="reset" id="reset" type="button" hidden>Volver a los valores del estudio</button>
     </div>
     <div class="controles">
-      <div class="ctrl">
-        <div class="ctrl-cab"><label for="clasif">Clasificación de vialidad</label></div>
-        <select id="clasif">{opciones}</select>
+      <div class="ctrl ctrl-par">
+        <div class="sub">
+          <div class="ctrl-cab"><label for="clasif">Clasificación de vialidad</label></div>
+          <select id="clasif">{opciones}</select>
+        </div>
+        <div class="sub sub-pav">
+          <div class="ctrl-cab"><label for="pav">Pavimento</label></div>
+          <select id="pav">{opciones_pav}</select>
+        </div>
       </div>
       <div class="ctrl">
         <div class="ctrl-cab"><label for="interpostal">Distancia interpostal</label>
@@ -951,7 +998,8 @@ def html(datos: Dict[str, Any]) -> str:
       </div>
     </div>
     <p class="avisomov" id="avisomov" hidden>Estás viendo una configuración distinta a la
-    del estudio, que es de {sEst} m de interpostal y {hEst} m de altura de montaje.</p>
+    del estudio, que es de {sEst} m de interpostal, {hEst} m de altura de montaje,
+    pavimento {pavEst} y clasificación {clasEst}.</p>
   </section>
 
   <section class="plan">
@@ -1021,6 +1069,9 @@ const B = {barrido};
         titulo=TITULO,
         plan=plan_html,
         opciones=opciones,
+        opciones_pav=opciones_pav,
+        pavEst=escape(nom.ETIQUETAS_PAVIMENTO.get(pavimento, pavimento)),
+        clasEst=escape(nom.ETIQUETAS_VIALIDAD.get(sel_actual, sel_actual)),
         maxS=len(ints) - 1,
         maxH=len(alts) - 1,
         iS=b["i_interpostal_estudio"],

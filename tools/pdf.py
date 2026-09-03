@@ -1,12 +1,13 @@
 r"""Convierte un reporte.html en PDF, congelando los parametros moviles.
 
     python tools/pdf.py estudios/<nombre>/reporte.html \
-        --clasificacion "Vias primarias" --interpostal 40 --altura 10
+        --clasificacion "Vias primarias" --pavimento R3 \
+        --interpostal 40 --altura 10
 
-En pantalla el reporte deja mover clasificacion, interpostal y altura. El PDF
-no puede: es un entregable fijo. Por eso este script exige elegirlos antes
-(o toma los del propio estudio) y los deja escritos en el papel, en el bloque
-que solo aparece al imprimir.
+En pantalla el reporte deja mover clasificacion, pavimento, interpostal y
+altura. El PDF no puede: es un entregable fijo. Por eso este script exige
+elegirlos antes (o toma los del propio estudio) y los deja escritos en el
+papel, en el bloque que solo aparece al imprimir.
 
 Requiere Playwright con Chromium instalado:
     python -m playwright install chromium
@@ -20,7 +21,7 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 
-def _fija(page, clasif, interpostal, altura) -> dict:
+def _fija(page, clasif, pavimento, interpostal, altura) -> dict:
     """Mueve los controles del reporte y devuelve lo que quedo seleccionado.
 
     Se toca el control real y se dispara su evento, en vez de reescribir el
@@ -28,17 +29,22 @@ def _fija(page, clasif, interpostal, altura) -> dict:
     pantalla, y no hay una segunda ruta que pueda desviarse.
     """
     return page.evaluate(
-        """([clasif, s, h]) => {
-        const sel = document.getElementById('clasif');
-        if (clasif) {
-          const n = clasif.trim().toLowerCase();
-          const op = [...sel.options].find(o =>
-            o.value.toLowerCase() === n || o.text.toLowerCase().includes(n));
-          if (!op) throw new Error('clasificación no encontrada: ' + clasif +
-            ' | Opciones: ' + [...sel.options].map(o => o.text).join(' / '));
-          sel.value = op.value;
-          sel.dispatchEvent(new Event('change'));
-        }
+        """([clasif, pav, s, h]) => {
+        const elige = (id, valor, que) => {
+          const sel = document.getElementById(id);
+          if (valor) {
+            const n = String(valor).trim().toLowerCase();
+            const op = [...sel.options].find(o =>
+              o.value.toLowerCase() === n || o.text.toLowerCase().includes(n));
+            if (!op) throw new Error(que + ' no encontrado: ' + valor +
+              ' | Opciones: ' + [...sel.options].map(o => o.text).join(' / '));
+            sel.value = op.value;
+            sel.dispatchEvent(new Event('change'));
+          }
+          return sel;
+        };
+        const sel = elige('clasif', clasif, 'clasificación');
+        const selP = elige('pav', pav, 'pavimento');
         const mueve = (id, valor, eje) => {
           if (valor == null) return;
           const i = eje.findIndex(x => Math.abs(x - valor) < 1e-6);
@@ -52,20 +58,21 @@ def _fija(page, clasif, interpostal, altura) -> dict:
         mueve('altura', h, B.alturas);
         return {
           clasificacion: sel.options[sel.selectedIndex].text,
+          pavimento: selP.options[selP.selectedIndex].text,
           interpostal: B.interpostales[+document.getElementById('interpostal').value],
           altura: B.alturas[+document.getElementById('altura').value],
         };
       }""",
-        [clasif, interpostal, altura],
+        [clasif, pavimento, interpostal, altura],
     )
 
 
-def genera(html: Path, destino: Path, clasif, interpostal, altura) -> dict:
+def genera(html: Path, destino: Path, clasif, pavimento, interpostal, altura) -> dict:
     with sync_playwright() as pw:
         navegador = pw.chromium.launch()
         page = navegador.new_page()
         page.goto(html.resolve().as_uri(), wait_until="networkidle")
-        elegido = _fija(page, clasif, interpostal, altura)
+        elegido = _fija(page, clasif, pavimento, interpostal, altura)
         page.emulate_media(media="print")
         page.pdf(path=str(destino), format="A4", print_background=True,
                  margin={"top": "14mm", "bottom": "14mm",
@@ -81,6 +88,8 @@ def main(argv=None) -> int:
                     help="por omisión, reporte.pdf junto al HTML")
     ap.add_argument("--clasificacion",
                     help="clasificación de vialidad; acepta parte del nombre")
+    ap.add_argument("--pavimento",
+                    help="R1 a R4; por omisión, el del estudio")
     ap.add_argument("--interpostal", type=float)
     ap.add_argument("--altura", type=float)
     a = ap.parse_args(argv)
@@ -91,7 +100,7 @@ def main(argv=None) -> int:
     destino = a.salida or a.html.with_suffix(".pdf")
 
     try:
-        elegido = genera(a.html, destino, a.clasificacion,
+        elegido = genera(a.html, destino, a.clasificacion, a.pavimento,
                          a.interpostal, a.altura)
     except Exception as exc:  # noqa: BLE001
         print("Error: {}".format(exc), file=sys.stderr)
@@ -99,6 +108,7 @@ def main(argv=None) -> int:
 
     print("PDF escrito en {}".format(destino))
     print("  clasificación: {}".format(elegido["clasificacion"]))
+    print("  pavimento:     {}".format(elegido["pavimento"]))
     print("  interpostal:   {} m".format(elegido["interpostal"]))
     print("  altura:        {} m".format(elegido["altura"]))
     return 0

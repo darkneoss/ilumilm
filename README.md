@@ -122,7 +122,7 @@ Crea `estudios/<nombre>/entrada.json`:
 | `disposicion` | `unilateral`, `tresbolillo`, `central doble` o `bilateral opuesta`. Acepta también los nombres del Excel («De un solo lado», «Montado en el camellón»). |
 | `ancho_carril` | Ancho de **un** carril, no el total de la calzada. |
 | `retranqueo` | Del poste a la orilla de la calzada. Si el brazo lo supera, el luminario queda montado sobre el arroyo vehicular. |
-| `pavimento` | `R1` a `R4`. **R2 por omisión**, salvo indicación contraria. |
+| `pavimento` | `R1` a `R4`. **R2 por omisión**, salvo indicación contraria. En el reporte se puede cambiar sin recalcular. |
 | `banqueta` | Opcional, 0 por omisión. Ancho de acera a cada lado. **No entra en ningún cálculo**: solo completa el perfil de la vía en el reporte. |
 | `perdidas` | Opcional. Por omisión `0.85 × 0.90 × 1.0` (LED). El factor de balastro es 1 porque el driver ya viene en la potencia nominal. |
 | `luminarios[].archivo` | Ruta a un `.ies` o nombre de uno indexado en `catalogo/`. |
@@ -157,16 +157,17 @@ ese momento, con los valores que hayas dejado en los controles.
 Para generarlo sin abrir el navegador:
 
 ```bash
-python tools/pdf.py estudios/<nombre>/reporte.html     --clasificacion "Vías primarias" --interpostal 40 --altura 10
+python tools/pdf.py estudios/<nombre>/reporte.html     --clasificacion "Vías primarias" --pavimento R3 --interpostal 40 --altura 10
 ```
 
-Los tres argumentos son opcionales; sin ellos usa los valores del propio
+Los cuatro argumentos son opcionales; sin ellos usa los valores del propio
 estudio. Requiere Playwright con Chromium (`python -m playwright install
 chromium`), que no hace falta para nada más.
 
 **En papel hay que decidir antes lo que en pantalla se movía.** El PDF no
-lleva controles, así que la clasificación, la interpostal y la altura con que
-se generó quedan impresas en su propio bloque, arriba de la comparativa. Un
+lleva controles, así que la clasificación, el pavimento, la interpostal y la
+altura con que se generó quedan impresos en su propio bloque, arriba de la
+comparativa. Un
 PDF sin ese dato no se puede auditar: los umbrales de la norma dependen de la
 clasificación, y esa no se deduce de la geometría.
 
@@ -202,11 +203,15 @@ que dejó la validación: la herramienta que se sustituye la usa en el cálculo 
 no la escribe en su reporte, así que dos estudios con inclinaciones distintas
 salían indistinguibles.
 
-Además de la comparativa y el veredicto por criterio, deja mover tres
+Además de la comparativa y el veredicto por criterio, deja mover cuatro
 parámetros sin volver a correr nada:
 
-- **Clasificación de vialidad.** No cambia la física, solo los umbrales de la
-  norma, así que se resuelve en el navegador.
+- **Clasificación de vialidad y pavimento.** No cambian la física —el cálculo de
+  iluminancia no usa el pavimento— sino qué tabla de la norma se aplica, así que
+  se resuelven en el navegador con los umbrales de las cuatro tablas embebidos.
+  Mover el pavimento cambia los tres criterios a la vez: el R1 refleja más y por
+  eso exige menos lux y menos potencia. Útil cuando el pavimento real no está
+  confirmado y quieres ver contra qué te enfrentas en cada caso.
 - **Interpostal y altura de montaje.** Estas sí cambian el cálculo completo, así
   que vienen de un barrido precalculado: 13 × 13 combinaciones, cada una pasada
   por el mismo motor. No son valores interpolados.
@@ -217,6 +222,14 @@ incluidos aunque no caigan en la retícula.
 
 El mapa isolux dibuja el poste, el brazo y el luminario en su posición real, y
 el DPEA se recalcula al mover el interpostal, porque cambia el área del tramo.
+
+En cuanto mueves cualquiera de los cuatro aparece un aviso y el botón para
+volver a los valores del estudio, y el control tocado se marca en ámbar: lo que
+ves deja de ser el estudio que se guardó, y un veredicto leído sin saber eso no
+vale nada.
+
+**Al hacer clic en una fila de la comparativa saltas a su detalle**, con su mapa
+isolux y sus tres criterios.
 
 ---
 

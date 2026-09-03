@@ -289,6 +289,8 @@ def _barrido(
     inclinaciones: List[float],
     llf_total: float,
     modo: str,
+    vialidad_nom: str = "",
+    pavimento_nom: str = "",
 ) -> Dict[str, Any]:
     """Precalcula la malla para cada combinación de interpostal y altura.
 
@@ -334,6 +336,10 @@ def _barrido(
         "alturas": alturas,
         "i_interpostal_estudio": interpostales.index(v.interpostal),
         "i_altura_estudio": alturas.index(v.altura_montaje),
+        # Para que el boton "volver a los valores del estudio" del reporte
+        # pueda devolver tambien los dos selectores, no solo los deslizadores.
+        "clasificacion_estudio": vialidad_nom,
+        "pavimento_estudio": pavimento_nom,
         "xs_por_interpostal": xs_por_interpostal,
         "ys": [round(y, 3) for y in calc.valores_y(v.num_carriles, v.ancho_carril, v.camellon)],
         "watts_por_tramo": [w * n_tramo for w in watts],
@@ -416,7 +422,8 @@ def ejecuta(ruta_json: Path) -> Dict[str, Any]:
         },
         "modo_azimut": modo,
         "resultados": resultados,
-        "barrido": _barrido(v, fotos, watts_lista, inclinaciones, llf_total, modo),
+        "barrido": _barrido(v, fotos, watts_lista, inclinaciones, llf_total, modo,
+                            vialidad_nom, pavimento_nom),
         "recomendacion": resultados[0]["catalogo"] if resultados[0]["nom"]["cumple"] else None,
     }
     return salida

@@ -109,3 +109,24 @@ def test_cada_fila_de_la_comparativa_apunta_a_su_detalle(html):
     anclas = re.findall(r'<section class="detalle" id="(lum-\d+)"', html)
     assert destinos, "ninguna fila enlaza a su detalle"
     assert destinos == anclas
+
+
+def test_el_pavimento_se_puede_mover_en_el_reporte(html):
+    """El pavimento no entra en el calculo de iluminancia: solo elige la tabla
+    de umbrales de la norma. Por eso se resuelve en el navegador, como la
+    clasificacion, y por eso el reporte tiene que llevar las CUATRO tablas y no
+    solo la del estudio."""
+    assert 'id="pav"' in html
+    datos = json.loads(re.search(r"const REQ = (\{.*?\});\n", html, re.S).group(1))
+    assert set(datos) == {"R1", "R2", "R3", "R4"}
+    # y los umbrales de verdad cambian entre tablas, que es lo que hace util el
+    # control: si fueran iguales, el selector seria decorado
+    eprom = {p: t["vias_primarias_y_colectoras"]["eprom_min"] for p, t in datos.items()}
+    assert len(set(eprom.values())) > 1, eprom
+
+
+def test_el_pavimento_ya_no_esta_en_el_bloque_de_planificacion(html):
+    """Regla del bloque: solo lo que los controles NO mueven. Un dato repetido
+    ahi diria un valor distinto al del selector en cuanto alguien lo tocara."""
+    plan = html[html.index('<section class="plan">'):html.index('id="comparativa"')]
+    assert ">Pavimento<" not in plan

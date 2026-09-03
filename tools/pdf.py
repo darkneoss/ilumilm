@@ -57,6 +57,11 @@ def _fija(page, clasif, pavimento, interpostal, altura) -> dict:
         mueve('interpostal', s, B.interpostales);
         mueve('altura', h, B.alturas);
         return {
+          // La version se lee del PROPIO documento, no del motor que este al
+          // lado de este script: lo que hay que imprimir es con que codigo se
+          // calculo el estudio, y eso lo dice el reporte.
+          version: (document.querySelector('footer strong') || {}).textContent ||
+                   'no registrada',
           clasificacion: sel.options[sel.selectedIndex].text,
           pavimento: selP.options[selP.selectedIndex].text,
           interpostal: B.interpostales[+document.getElementById('interpostal').value],
@@ -107,6 +112,7 @@ def main(argv=None) -> int:
         return 1
 
     print("PDF escrito en {}".format(destino))
+    print("  versión:       {}".format(elegido["version"]))
     print("  clasificación: {}".format(elegido["clasificacion"]))
     print("  pavimento:     {}".format(elegido["pavimento"]))
     print("  interpostal:   {} m".format(elegido["interpostal"]))

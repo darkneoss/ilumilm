@@ -130,3 +130,38 @@ def test_el_pavimento_ya_no_esta_en_el_bloque_de_planificacion(html):
     ahi diria un valor distinto al del selector en cuanto alguien lo tocara."""
     plan = html[html.index('<section class="plan">'):html.index('id="comparativa"')]
     assert ">Pavimento<" not in plan
+
+
+def test_el_reporte_dice_con_que_version_se_calculo(html):
+    """Un reporte que no dice que codigo lo produjo es infalsificable pero
+    inauditable, que es el mismo defecto de la herramienta que se sustituye
+    --usa la inclinacion y no la escribe--. La version es lo unico que enlaza
+    una memoria de calculo entregada con el motor que la genero."""
+    from engine import __version__
+    assert "Calculado con <strong>ilumilm %s</strong>" % __version__ in html
+
+
+def test_el_reporte_distingue_quien_calculo_de_quien_dibujo():
+    """`resultados.json` se puede volver a renderizar mas tarde con un motor
+    mas nuevo, y los numeros seguirian siendo los del viejo. Cuando difieren se
+    dicen las dos versiones: lo que hay que poder auditar es de donde salieron
+    los numeros, no quien pinto la pagina."""
+    from engine import __version__, report
+
+    if not IES.exists():
+        pytest.skip("falta la fotometria")
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as d:
+        ruta = Path(d) / "entrada.json"
+        ruta.write_text(json.dumps(ENTRADA), encoding="utf-8")
+        datos = ejecuta(ruta)
+
+    assert datos["version_motor"] == __version__
+
+    viejo = dict(datos, version_motor="0.9.0")
+    h = report.html(viejo)
+    assert "ilumilm 0.9.0" in h and "el reporte lo generó la %s" % __version__ in h
+
+    sin_version = {k: v for k, v in datos.items() if k != "version_motor"}
+    assert "anterior a la 1.0.0" in report.html(sin_version)

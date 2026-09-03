@@ -78,7 +78,7 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from . import calc, catalogo, ies, nom
+from . import __version__, calc, catalogo, ies, nom
 from .geometry import Vialidad
 
 # Disposiciones (ya normalizadas por Vialidad, forma interna del VBA) que
@@ -398,6 +398,11 @@ def ejecuta(ruta_json: Path) -> Dict[str, Any]:
     inclinaciones = [r["inclinacion_grados"] for r in resultados]
 
     salida = {
+        # La version del motor que CALCULO estos numeros. Es lo unico que
+        # permite rastrear un estudio ya entregado hasta el codigo que lo
+        # produjo; sin ella, un reporte impreso es infalsificable pero tambien
+        # inauditable.
+        "version_motor": __version__,
         "entrada": str(ruta_json),
         "vialidad": {
             "num_carriles": v.num_carriles,

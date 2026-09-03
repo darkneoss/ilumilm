@@ -26,7 +26,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Sequence
 
 from . import nom
-from . import esquema
+from . import __version__, esquema
 from .geometry import Vialidad, paso_malla, posiciones_luminarios
 
 TITULO = "Estudio de alumbrado público"
@@ -803,6 +803,28 @@ JS = r"""
 """
 
 
+def _version_html(datos: Dict[str, Any]) -> str:
+    """La version que CALCULO el estudio, no la que dibuja el reporte.
+
+    Son la misma casi siempre, pero no tienen por que serlo: `resultados.json`
+    se puede volver a renderizar mas tarde con un motor mas nuevo, y los
+    numeros seguirian siendo los que calculo el viejo. Cuando difieren se dicen
+    las dos, porque lo que hay que poder auditar es de donde salieron los
+    numeros.
+
+    Un estudio calculado antes de que el motor estampara su version se rotula
+    como tal en vez de atribuirle la del renderizador, que seria mentira.
+    """
+    calculo = datos.get("version_motor")
+    if not calculo:
+        return ("Calculado con una versión de ilumilm anterior a la 1.0.0, "
+                "que todavía no la registraba")
+    if calculo == __version__:
+        return "Calculado con <strong>ilumilm {}</strong>".format(escape(calculo))
+    return ("Calculado con <strong>ilumilm {}</strong>; el reporte lo generó "
+            "la {}".format(escape(calculo), __version__))
+
+
 def html(datos: Dict[str, Any]) -> str:
     v = datos["vialidad"]
     n = datos["nom"]
@@ -1051,7 +1073,7 @@ def html(datos: Dict[str, Any]) -> str:
     calle.</p>
   </section>
 
-  <footer>Generado por el motor de cálculo de ilumilm. Los watts de cada
+  <footer>{version}. Los watts de cada
   luminario provienen del archivo IES o fueron capturados a mano; conviene
   confirmarlos contra la ficha del fabricante, porque de ellos depende
   directamente el DPEA.</footer>
@@ -1068,6 +1090,7 @@ const B = {barrido};
         js=JS,
         titulo=TITULO,
         plan=plan_html,
+        version=_version_html(datos),
         opciones=opciones,
         opciones_pav=opciones_pav,
         pavEst=escape(nom.ETIQUETAS_PAVIMENTO.get(pavimento, pavimento)),

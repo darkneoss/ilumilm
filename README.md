@@ -164,7 +164,11 @@ Escribe, junto a la entrada, `resultados.json` y `malla.csv`.
 python -m engine.report estudios/<nombre>/resultados.json
 ```
 
-Produce `reporte.html`, autocontenido y listo para publicar o enviar.
+Produce `reporte.html`, autocontenido y listo para publicar o enviar. El pie
+dice **con qué versión del motor se calculó** el estudio, y `resultados.json` la
+registra: es lo único que enlaza una memoria de cálculo ya entregada con el
+código que la produjo. Si un `resultados.json` viejo se vuelve a renderizar con
+un motor más nuevo, el reporte dice las dos versiones.
 
 ### 5. PDF (opcional)
 

@@ -86,6 +86,22 @@ especificaciones citan sus números de línea. De cada una se conservan los 7
 módulos del cálculo; ver [`reference/PROCEDENCIA.md`](reference/PROCEDENCIA.md),
 que también explica en qué términos se redistribuye ese código ajeno.
 
+## La versión se estampa, y qué la mueve
+
+`engine/__version__` viaja a `resultados.json` y al pie del reporte. Es lo único
+que enlaza una memoria de cálculo ya entregada con el código que la produjo, así
+que **no la toques a la ligera** y respeta lo que significa cada número:
+
+- **El primero** cambia si cambian los números que el motor produce para una
+  misma entrada. Dos estudios calculados con mayores distintos no son
+  comparables, y eso debe verse sin leer el diff.
+- **El segundo**, si se puede calcular o reportar algo nuevo sin mover lo
+  anterior.
+- **El tercero**, para arreglos que no mueven ningún número.
+
+Se etiqueta a mano cuando hay algo que congelar. No montes CI ni changelog
+automático.
+
 ## Datos de cliente
 
 `assets/` y `estudios/` no se versionan y no deben versionarse. Los nombres de

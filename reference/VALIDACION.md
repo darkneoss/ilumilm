@@ -9,6 +9,11 @@ el nombre de la vialidad en el nombre de archivo, y ese dato es de cliente y no
 pertenece al repositorio. La anonimización ocurre en la extracción, no después,
 para que una regeneración no vuelva a introducirlos.
 
+Los `.xlsx` de origen viven en `assets/estudios/`, que no se versiona. Por eso
+`tools/extraer_casos_sead.py` no produce nada en un clon: lo que se versiona es
+su salida ya anonimizada, `casos_sead.json`, que es todo lo que la suite
+necesita.
+
 Se excluyen las filas «Línea base» de cada estudio: usan un luminario genérico
 precargado en el Excel cuyo archivo .ies no tenemos.
 

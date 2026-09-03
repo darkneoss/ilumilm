@@ -82,16 +82,3 @@ La norma **no** está en el repositorio. Lo que hay en `engine/nom.py` son sus
 tablas de valores —clasificaciones de vialidad, iluminancias mínimas,
 uniformidades y DPEA máximos—, que son datos normativos de aplicación
 obligatoria en México, publicados en el Diario Oficial de la Federación.
-
----
-
-## 4. Lo que no se publica
-
-`assets/` está excluido del control de versiones desde el primer commit del
-repositorio: ahí viven el libro de Excel original, el texto de la norma y las
-corridas de estudios reales, que llevan nombres de vialidad de clientes.
-
-Los casos de regresión derivados de esas corridas se anonimizan **en la
-extracción** (`tools/extraer_casos_sead.py`), no después, para que una
-regeneración no vuelva a introducirlos. Se identifican como `estudio-NN` y solo
-conservan geometría y valores esperados, nunca de qué calle se trata.
